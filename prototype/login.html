@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>Вход — TurboPC</title>
+<link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="login" data-auth="guest">
+<div data-header></div>
+<div class="auth" style="min-height:760px">
+  <div class="auth-art" data-figma="Промо-панель">
+    <img class="art" src="assets/auth-art.svg" alt="" style="object-fit:cover;object-position:50% 100%">
+    <div class="content">
+      <span class="chip cyan" style="align-self:flex-start">С возвращением</span>
+      <blockquote>
+        <h2 class="h2">Твоё место<br><span class="grad-text">уже ждёт</span></h2>
+        <ul class="list-check" style="margin-top:28px">
+          <li><i data-i="check"></i>Бронь ПК за минуту по схеме зала</li>
+          <li><i data-i="check"></i>Баланс и история платежей в одном месте</li>
+          <li><i data-i="check"></i>Запись на турниры в пару кликов</li>
+        </ul>
+      </blockquote>
+      <span class="small">Нет аккаунта? <a href="register.html" class="link">Зарегистрируйтесь</a> — первый час в подарок.</span>
+    </div>
+  </div>
+  <div class="auth-side">
+    <form class="auth-card" id="form" novalidate data-figma="Форма входа">
+      <div><h1 class="h2">Вход</h1><p class="small" style="margin-top:8px">Войдите, чтобы бронировать места и управлять балансом</p></div>
+      <div class="alert error" id="auth-err" style="display:none"><i data-i="alert" class="ic-sm"></i><span><b>Неверный логин или пароль.</b> Проверьте данные или восстановите пароль. Осталось попыток: 3.</span></div>
+      <div class="field"><label class="label" for="login">Телефон или e-mail</label><input class="input" id="login" name="login" placeholder="+7 (___) ___-__-__ или mail@example.com" data-rules="required login" autocomplete="username"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+      <div class="field"><div style="display:flex;justify-content:space-between"><label class="label" for="pass">Пароль</label><a href="#" class="link" style="font-size:14px">Забыли пароль?</a></div>
+        <div class="input-wrap"><input class="input" id="pass" name="password" type="password" placeholder="Введите пароль" data-rules="required" autocomplete="current-password"><button type="button" class="ic-btn" data-toggle-pass aria-label="Показать пароль"><i data-i="eye" class="ic-sm"></i></button></div>
+        <span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+      <label class="check"><input type="checkbox" checked>Запомнить меня</label>
+      <button class="btn btn-primary btn-lg btn-block">Войти</button>
+      <div class="divider"></div>
+      <p class="switch-mode">Впервые в TurboPC? <a href="register.html">Создать аккаунт</a></p>
+    </form>
+  </div>
+</div>
+<div data-footer></div>
+<script src="assets/app.js"></script>
+<script>
+window.pageInit = q => {
+  const form = document.getElementById('form');
+  /* Демо-учётка прототипа: любой корректный логин и пароль "turbo2026" */
+  bindForm(form, () => {
+    if (document.getElementById('pass').value === 'turbo2026') location.href = 'account.html';
+    else { document.getElementById('auth-err').style.display = 'flex'; document.getElementById('pass').classList.add('is-error'); }
+  });
+  if (q.get('state') === 'error') {
+    document.getElementById('login').value = 'artem@example.com'; document.getElementById('pass').value = 'qwerty';
+    form.requestSubmit();
+  }
+  if (q.get('state') === 'empty') form.requestSubmit();
+};
+</script>
+</body>
+</html>

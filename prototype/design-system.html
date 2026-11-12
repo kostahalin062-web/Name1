@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>Дизайн-система — TurboPC</title><link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css"></head>
+<body data-page="design-system" data-auth="guest">
+<div data-header></div>
+<div class="container">
+<section class="page-head"><span class="overline">TurboPC UI Kit</span><h1 class="h1" style="margin-top:8px">Дизайн-система</h1>
+<p class="body-l" style="margin-top:12px;max-width:760px">Тёмная игровая тема с двумя яркими акцентами: оранжевый — действие, голубой — навигация и выбор. Все страницы прототипа собраны из этих токенов и компонентов.</p></section>
+
+<section class="section" data-figma="Логотип"><div class="section-head"><div><span class="overline">01</span><h2 class="h2">Логотип</h2></div></div>
+<div class="grid-3">
+<div class="card" style="display:grid;place-items:center;height:200px"><img src="assets/logo.svg" alt="Основной логотип" style="height:72px"></div>
+<div class="card" style="display:grid;place-items:center;height:200px;background:#fff"><img src="../brand/logo-mono.svg" alt="Монохромный логотип" style="height:72px"></div>
+<div class="card" style="display:flex;justify-content:center;align-items:center;gap:32px;height:200px"><img src="assets/mark.svg" alt="Знак" style="height:96px"><img src="assets/favicon.svg" alt="Иконка" style="height:64px;border-radius:14px"></div>
+</div>
+<div class="grid-3 small" style="margin-top:12px"><span>Основная версия — для тёмного фона</span><span>Монохромная версия — печать, светлый фон</span><span>Знак и иконка приложения (favicon)</span></div></section>
+
+<section class="section" data-figma="Цвета"><div class="section-head"><div><span class="overline">02</span><h2 class="h2">Цветовая палитра</h2></div></div>
+<div class="grid-4"><div class="ds-swatch"><div class="c" style="background:var(--bg)"></div><div class="m"><b>Фон</b><span>#0A0D14</span><br>основной фон</div></div><div class="ds-swatch"><div class="c" style="background:var(--surface)"></div><div class="m"><b>Поверхность</b><span>#111725</span><br>карточки</div></div><div class="ds-swatch"><div class="c" style="background:var(--surface-2)"></div><div class="m"><b>Поверхность 2</b><span>#182033</span><br>поля, вложенные блоки</div></div><div class="ds-swatch"><div class="c" style="background:var(--border)"></div><div class="m"><b>Граница</b><span>#263049</span><br>рамки, разделители</div></div><div class="ds-swatch"><div class="c" style="background:var(--orange)"></div><div class="m"><b>Turbo Orange</b><span>#FF6A1A</span><br>главные действия</div></div><div class="ds-swatch"><div class="c" style="background:var(--cyan)"></div><div class="m"><b>Electric Cyan</b><span>#1ED8F5</span><br>ссылки, фокус, выбор</div></div><div class="ds-swatch"><div class="c" style="background:var(--grad)"></div><div class="m"><b>Градиент бренда</b><span>#FF8A2B → #FF2E4D</span><br>логотип, акценты</div></div><div class="ds-swatch"><div class="c" style="background:var(--text)"></div><div class="m"><b>Текст</b><span>#EEF1F8</span><br>основной текст</div></div><div class="ds-swatch"><div class="c" style="background:var(--success)"></div><div class="m"><b>Успех / свободно</b><span>#2EE59D</span><br>статусы, суммы +</div></div><div class="ds-swatch"><div class="c" style="background:var(--warning)"></div><div class="m"><b>Внимание / бронь</b><span>#FFC53D</span><br>забронировано</div></div><div class="ds-swatch"><div class="c" style="background:var(--danger)"></div><div class="m"><b>Ошибка / занято</b><span>#FF4D6D</span><br>ошибки, занято</div></div><div class="ds-swatch"><div class="c" style="background:var(--text-2)"></div><div class="m"><b>Вторичный текст</b><span>#A3ACC2</span><br>описания</div></div></div></section>
+
+<section class="section" data-figma="Типографика"><div class="section-head"><div><span class="overline">03</span><h2 class="h2">Типографика</h2></div><span class="small">Unbounded — заголовки · Inter — интерфейс и текст</span></div>
+<div class="card" style="padding:8px 32px">
+<div class="ds-type"><span class="small">H1 · Unbounded 800 · 56/64</span><span class="h1">Играй на скорости</span></div>
+<div class="ds-type"><span class="small">H2 · Unbounded 800 · 36/44</span><span class="h2">Зоны и тарифы</span></div>
+<div class="ds-type"><span class="small">H3 · Unbounded 700 · 24/32</span><span class="h3">Активные брони</span></div>
+<div class="ds-type"><span class="small">H4 · Inter 600 · 18/26</span><span class="h4">Турнир Turbo Cup: Осень</span></div>
+<div class="ds-type"><span class="small">Body L · Inter 400 · 18/28</span><span class="body-l">Бронируй место онлайн за минуту — без звонков и очередей.</span></div>
+<div class="ds-type"><span class="small">Body · Inter 400 · 16/26</span><span class="body">Сумма блокируется на балансе до начала сессии.</span></div>
+<div class="ds-type"><span class="small">Small · Inter 400 · 14/20</span><span class="small">Действует 30 дней, можно делить на несколько визитов.</span></div>
+<div class="ds-type"><span class="small">Overline · Inter 600 · 12/16</span><span class="overline">Ближайшие турниры</span></div>
+</div></section>
+
+<section class="section" data-figma="Сетка и отступы"><div class="section-head"><div><span class="overline">04</span><h2 class="h2">Сетка и отступы</h2></div><span class="small">Макет 1440 px · контейнер 1200 px · 12 колонок по 78 px · межколонник 24 px</span></div>
+<div class="ds-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="card" style="margin-top:24px;display:flex;justify-content:space-between;align-items:flex-end">
+<div class="ds-space"><div><i style="width:4px;height:4px"></i>4</div><div><i style="width:8px;height:8px"></i>8</div><div><i style="width:12px;height:12px"></i>12</div><div><i style="width:16px;height:16px"></i>16</div><div><i style="width:24px;height:24px"></i>24</div><div><i style="width:32px;height:32px"></i>32</div><div><i style="width:48px;height:48px"></i>48</div><div><i style="width:64px;height:64px"></i>64</div><div><i style="width:96px;height:96px"></i>96</div></div>
+<div class="small" style="max-width:380px">Шаг сетки отступов — 4 px. Радиусы: 8 (мелкие элементы), 10–12 (поля, кнопки), 16 (карточки), 24 (крупные блоки).</div></div></section>
+
+<section class="section" data-figma="Кнопки"><div class="section-head"><div><span class="overline">05</span><h2 class="h2">Кнопки и состояния</h2></div></div>
+<div class="card" style="display:flex;flex-direction:column;gap:20px">
+<div class="ds-row"><span class="ds-label"></span><span class="ds-label" style="width:200px">Обычное</span><span class="ds-label" style="width:200px">Наведение</span><span class="ds-label" style="width:200px">Нажатие</span><span class="ds-label" style="width:200px">Недоступно</span></div>
+<div class="ds-row"><span class="ds-label">Primary</span><div style="width:200px"><button class="btn btn-primary ">Забронировать</button></div><div style="width:200px"><button class="btn btn-primary is-hover">Забронировать</button></div><div style="width:200px"><button class="btn btn-primary is-active">Забронировать</button></div><div style="width:200px"><button class="btn btn-primary is-disabled" disabled>Забронировать</button></div></div><div class="ds-row"><span class="ds-label">Secondary</span><div style="width:200px"><button class="btn btn-secondary ">Подробнее</button></div><div style="width:200px"><button class="btn btn-secondary is-hover">Подробнее</button></div><div style="width:200px"><button class="btn btn-secondary is-active">Подробнее</button></div><div style="width:200px"><button class="btn btn-secondary is-disabled" disabled>Подробнее</button></div></div><div class="ds-row"><span class="ds-label">Ghost</span><div style="width:200px"><button class="btn btn-ghost ">Все тарифы</button></div><div style="width:200px"><button class="btn btn-ghost is-hover">Все тарифы</button></div><div style="width:200px"><button class="btn btn-ghost is-active">Все тарифы</button></div><div style="width:200px"><button class="btn btn-ghost is-disabled" disabled>Все тарифы</button></div></div>
+<div class="ds-row"><span class="ds-label">Размеры</span><button class="btn btn-primary btn-lg">Large 56</button><button class="btn btn-primary">Medium 48</button><button class="btn btn-primary btn-sm">Small 40</button><button class="btn btn-secondary"><i data-i="plus" class="ic-sm"></i>С иконкой</button><button class="btn btn-danger btn-sm">Отменить</button></div>
+</div></section>
+
+<section class="section" data-figma="Поля ввода"><div class="section-head"><div><span class="overline">06</span><h2 class="h2">Поля ввода и состояния</h2></div></div>
+<div class="card grid-3" style="gap:28px">
+<div class="field"><label class="label">Обычное</label><input class="input" placeholder="Введите имя"><span class="hint">Подсказка под полем</span></div>
+<div class="field"><label class="label">Наведение</label><input class="input is-hover" placeholder="Введите имя"></div>
+<div class="field"><label class="label">Фокус</label><input class="input is-focus" value="Артём"></div>
+<div class="field has-error"><label class="label">Ошибка</label><input class="input is-error" value="+7 (913) 12"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Введите номер полностью</span></span></div>
+<div class="field"><label class="label">Успех</label><input class="input is-success" value="artem@example.com"></div>
+<div class="field"><label class="label">Недоступно</label><input class="input" disabled value="Нельзя изменить"></div>
+<div class="field"><label class="label">Список</label><select class="input"><option>Бронирование</option></select></div>
+<div class="field"><label class="label">Пароль</label><div class="input-wrap"><input class="input" type="password" value="turbo2026"><button type="button" class="ic-btn" data-toggle-pass><i data-i="eye" class="ic-sm"></i></button></div></div>
+<div class="field" style="justify-content:center;gap:14px"><label class="check"><input type="checkbox" checked>Чекбокс отмечен</label><label class="check"><input type="checkbox">Чекбокс пуст</label><div class="toggle" style="padding:0;border:0"><span class="small">Переключатель</span><button class="switch on"></button></div></div>
+</div>
+<div class="grid-3" style="margin-top:24px">
+<div class="alert error"><i data-i="alert" class="ic-sm"></i><span>Сообщение об ошибке</span></div>
+<div class="alert success"><i data-i="check" class="ic-sm"></i><span>Сообщение об успехе</span></div>
+<div class="alert info"><i data-i="info" class="ic-sm"></i><span>Информационное сообщение</span></div></div>
+<div class="ds-row" style="margin-top:24px"><span class="chip">Нейтральный</span><span class="chip orange">Акцент</span><span class="chip cyan">Категория</span><span class="chip green"><span class="dot"></span>Свободно</span><span class="chip amber"><span class="dot"></span>Забронировано</span><span class="chip red"><span class="dot"></span>Занято</span>
+<button class="seat free" style="width:56px">S01</button><button class="seat booked" style="width:56px">S02</button><button class="seat busy" style="width:56px">S03</button><button class="seat service" style="width:56px">S04</button><button class="seat selected" style="width:56px">S05</button></div>
+</section>
+
+<section class="section" data-figma="Иконки"><div class="section-head"><div><span class="overline">07</span><h2 class="h2">Иконки</h2></div><span class="small">Собственный набор: сетка 24×24, линия 2 px, скруглённые концы</span></div>
+<div class="ds-icons"><div><i data-i="monitor"></i>ПК</div><div><i data-i="calendar"></i>Дата</div><div><i data-i="clock"></i>Время</div><div><i data-i="wallet"></i>Баланс</div><div><i data-i="card"></i>Карта</div><div><i data-i="trophy"></i>Турнир</div><div><i data-i="user"></i>Профиль</div><div><i data-i="users"></i>Команда</div><div><i data-i="lock"></i>Пароль</div><div><i data-i="mail"></i>Почта</div><div><i data-i="phone"></i>Телефон</div><div><i data-i="pin"></i>Адрес</div><div><i data-i="star"></i>VIP</div><div><i data-i="headset"></i>Гарнитура</div><div><i data-i="cup"></i>Напитки</div><div><i data-i="bolt"></i>Турбо</div><div><i data-i="check"></i>Готово</div><div><i data-i="alert"></i>Ошибка</div><div><i data-i="info"></i>Инфо</div><div><i data-i="eye"></i>Показать</div><div><i data-i="eye-off"></i>Скрыть</div><div><i data-i="arrow-right"></i>Далее</div><div><i data-i="arrow-left"></i>Назад</div><div><i data-i="chevron-down"></i>Список</div><div><i data-i="filter"></i>Фильтр</div><div><i data-i="logout"></i>Выход</div><div><i data-i="sliders"></i>Настройки</div><div><i data-i="history"></i>История</div><div><i data-i="plus"></i>Добавить</div><div><i data-i="x"></i>Закрыть</div><div><i data-i="box"></i>Пакет</div><div><i data-i="grid"></i>Зоны</div><div><i data-i="moon"></i>Ночь</div><div><i data-i="gauge"></i>FPS</div><div><i data-i="message"></i>Сообщение</div><div><i data-i="send"></i>Отправить</div><div><i data-i="edit"></i>Изменить</div><div><i data-i="gamepad"></i>Геймпад</div><div><i data-i="shield"></i>Защита</div><div><i data-i="wifi"></i>Сеть</div><div><i data-i="cpu"></i>Железо</div><div><i data-i="armchair"></i>Кресло</div><div><i data-i="ticket"></i>Взнос</div><div><i data-i="receipt"></i>Чек</div></div></section>
+</div>
+<div data-footer></div>
+<script src="assets/app.js"></script>
+</body></html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>Тарифы и услуги — TurboPC</title>
+<link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="catalog" data-auth="guest">
+<div data-header></div>
+
+<div class="container">
+  <section class="page-head" data-figma="Заголовок">
+    <div class="crumbs"><a href="index.html">Главная</a><span>/</span><span>Тарифы и услуги</span></div>
+    <h1 class="h1">Тарифы и услуги</h1>
+    <p class="body-l" style="margin-top:12px;max-width:720px">Почасовые тарифы для каждой зоны, выгодные пакеты часов и дополнительные услуги. Оплата — с баланса личного кабинета.</p>
+  </section>
+
+  <div class="catalog">
+    <!-- Фильтры -->
+    <aside class="card filters" data-figma="Фильтры">
+      <div style="display:flex;justify-content:space-between;align-items:center"><h3 class="h4" style="display:flex;gap:10px;align-items:center"><i data-i="filter" class="ic-sm"></i>Фильтры</h3><button class="btn btn-ghost btn-sm" id="reset">Сбросить</button></div>
+      <div class="divider"></div>
+      <div><h4>Зона</h4><div class="filter-group">
+        <label class="check"><input type="checkbox" name="zone" value="standard" checked>Standard</label>
+        <label class="check"><input type="checkbox" name="zone" value="vip" checked>VIP</label>
+        <label class="check"><input type="checkbox" name="zone" value="bootcamp" checked>Bootcamp</label>
+      </div></div>
+      <div><h4>Тип услуги</h4><div class="filter-group">
+        <label class="check"><input type="checkbox" name="type" value="tariff" checked>Почасовые тарифы</label>
+        <label class="check"><input type="checkbox" name="type" value="pack" checked>Пакеты часов</label>
+        <label class="check"><input type="checkbox" name="type" value="extra" checked>Доп. услуги</label>
+      </div></div>
+      <div><h4>Цена, ₽</h4><div class="range"><input class="input" id="pmin" type="number" placeholder="от" value="0"><span class="muted">—</span><input class="input" id="pmax" type="number" placeholder="до" value="2000"></div></div>
+      <div><h4>Время</h4><div class="filter-group">
+        <label class="check"><input type="checkbox" id="night">Только ночные предложения</label>
+      </div></div>
+    </aside>
+
+    <main>
+      <div class="toolbar" data-figma="Вкладки">
+        <div class="tabs" id="tabs"><button class="active" data-t="all">Все</button><button data-t="tariff">Тарифы</button><button data-t="pack">Пакеты часов</button><button data-t="extra">Доп. услуги</button></div>
+        <select class="input" style="width:220px;height:44px" id="sort"><option value="def">По популярности</option><option value="asc">Сначала дешевле</option><option value="desc">Сначала дороже</option></select>
+      </div>
+
+      <section class="cat-group" data-group="tariff" data-figma="Почасовые тарифы">
+        <h3 class="h3"><span class="ic-box"><i data-i="clock"></i></span>Почасовые тарифы</h3>
+        <div class="grid-3">
+          <div class="card offer" data-zone="standard" data-type="tariff" data-price="100">
+            <div class="row"><span class="chip">Standard</span><span class="chip green">Свободно 12</span></div>
+            <h4 class="h4">Standard · час</h4>
+            <p>Общий зал, монитор 24″ 165 Гц. Ночью (22:00–08:00) — 80 ₽/ч.</p>
+            <div class="row"><div class="price">100 ₽<small>/ ч</small></div><a href="#booking" class="btn btn-secondary btn-sm">Забронировать</a></div>
+          </div>
+          <div class="card offer" data-zone="vip" data-type="tariff" data-price="180">
+            <div class="row"><span class="chip orange">VIP</span><span class="chip green">Свободно 4</span></div>
+            <h4 class="h4">VIP · час</h4>
+            <p>Отдельный зал, монитор 27″ 240 Гц. Ночью (22:00–08:00) — 150 ₽/ч.</p>
+            <div class="row"><div class="price">180 ₽<small>/ ч</small></div><a href="#booking" class="btn btn-primary btn-sm">Забронировать</a></div>
+          </div>
+          <div class="card offer" data-zone="bootcamp" data-type="tariff" data-price="700">
+            <div class="row"><span class="chip cyan">Bootcamp</span><span class="chip amber">Бронь с 20:00</span></div>
+            <h4 class="h4">Bootcamp · час</h4>
+            <p>Комната на 5 игроков с экраном для разборов. Ночью — 600 ₽/ч.</p>
+            <div class="row"><div class="price">700 ₽<small>/ ч</small></div><a href="#booking" class="btn btn-secondary btn-sm">Забронировать</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cat-group" data-group="pack" data-figma="Пакеты часов">
+        <h3 class="h3"><span class="ic-box cyan"><i data-i="box"></i></span>Пакеты часов</h3>
+        <div class="grid-3">
+          <div class="card offer" data-zone="standard" data-type="pack" data-price="270">
+            <div class="row"><span class="chip">Standard</span><span class="chip orange">−10%</span></div>
+            <h4 class="h4">3 часа</h4><p>Действует 30 дней, можно делить на несколько визитов.</p>
+            <div class="row"><div><span class="price">270 ₽</span><span class="old">300 ₽</span></div><a href="login.html" class="btn btn-secondary btn-sm">Купить</a></div>
+          </div>
+          <div class="card offer" data-zone="standard" data-type="pack" data-price="420">
+            <div class="row"><span class="chip">Standard</span><span class="chip orange">−16%</span></div>
+            <h4 class="h4">5 часов</h4><p>Действует 30 дней, можно делить на несколько визитов.</p>
+            <div class="row"><div><span class="price">420 ₽</span><span class="old">500 ₽</span></div><a href="login.html" class="btn btn-secondary btn-sm">Купить</a></div>
+          </div>
+          <div class="card offer" data-zone="standard" data-type="pack" data-price="450" data-night="1">
+            <div class="row"><span class="chip">Standard</span><span class="chip cyan"><i data-i="moon" class="ic-sm"></i>Ночь</span></div>
+            <h4 class="h4">Ночной пакет</h4><p>С 22:00 до 08:00 — 10 часов игры за фиксированную цену.</p>
+            <div class="row"><div class="price">450 ₽</div><a href="login.html" class="btn btn-secondary btn-sm">Купить</a></div>
+          </div>
+          <div class="card offer" data-zone="vip" data-type="pack" data-price="480">
+            <div class="row"><span class="chip orange">VIP</span><span class="chip orange">−11%</span></div>
+            <h4 class="h4">3 часа VIP</h4><p>Действует 30 дней, можно делить на несколько визитов.</p>
+            <div class="row"><div><span class="price">480 ₽</span><span class="old">540 ₽</span></div><a href="login.html" class="btn btn-primary btn-sm">Купить</a></div>
+          </div>
+          <div class="card offer" data-zone="vip" data-type="pack" data-price="780">
+            <div class="row"><span class="chip orange">VIP</span><span class="chip orange">−13%</span></div>
+            <h4 class="h4">5 часов VIP</h4><p>Действует 30 дней, можно делить на несколько визитов.</p>
+            <div class="row"><div><span class="price">780 ₽</span><span class="old">900 ₽</span></div><a href="login.html" class="btn btn-primary btn-sm">Купить</a></div>
+          </div>
+          <div class="card offer" data-zone="vip" data-type="pack" data-price="750" data-night="1">
+            <div class="row"><span class="chip orange">VIP</span><span class="chip cyan"><i data-i="moon" class="ic-sm"></i>Ночь</span></div>
+            <h4 class="h4">Ночной пакет VIP</h4><p>С 22:00 до 08:00 в VIP-зале за фиксированную цену.</p>
+            <div class="row"><div class="price">750 ₽</div><a href="login.html" class="btn btn-primary btn-sm">Купить</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cat-group" data-group="extra" data-figma="Дополнительные услуги">
+        <h3 class="h3"><span class="ic-box"><i data-i="plus"></i></span>Дополнительные услуги</h3>
+        <div class="grid-3">
+          <div class="card offer" data-zone="all" data-type="extra" data-price="90">
+            <div class="row"><span class="ic-box cyan"><i data-i="cup"></i></span><span class="chip">Все зоны</span></div>
+            <h4 class="h4">Напитки</h4><p>Вода, соки, газировка, кофе. Доставим к месту.</p>
+            <div class="row"><div class="price">от 90 ₽</div><a href="login.html" class="btn btn-secondary btn-sm">Заказать</a></div>
+          </div>
+          <div class="card offer" data-zone="all" data-type="extra" data-price="70">
+            <div class="row"><span class="ic-box cyan"><i data-i="box"></i></span><span class="chip">Все зоны</span></div>
+            <h4 class="h4">Снеки</h4><p>Чипсы, батончики, сэндвичи и горячие закуски.</p>
+            <div class="row"><div class="price">от 70 ₽</div><a href="login.html" class="btn btn-secondary btn-sm">Заказать</a></div>
+          </div>
+          <div class="card offer" data-zone="all" data-type="extra" data-price="50">
+            <div class="row"><span class="ic-box cyan"><i data-i="gamepad"></i></span><span class="chip">Все зоны</span></div>
+            <h4 class="h4">Аренда геймпада</h4><p>Беспроводной геймпад на время сессии.</p>
+            <div class="row"><div class="price">50 ₽<small>/ ч</small></div><a href="login.html" class="btn btn-secondary btn-sm">Заказать</a></div>
+          </div>
+          <div class="card offer" data-zone="vip" data-type="extra" data-price="250">
+            <div class="row"><span class="ic-box cyan"><i data-i="headset"></i></span><span class="chip orange">VIP</span></div>
+            <h4 class="h4">Стрим-сетап</h4><p>Веб-камера, микрофон и свет для трансляций.</p>
+            <div class="row"><div class="price">250 ₽<small>/ ч</small></div><a href="login.html" class="btn btn-secondary btn-sm">Заказать</a></div>
+          </div>
+          <div class="card offer" data-zone="bootcamp" data-type="extra" data-price="300">
+            <div class="row"><span class="ic-box cyan"><i data-i="monitor"></i></span><span class="chip cyan">Bootcamp</span></div>
+            <h4 class="h4">Запись игры</h4><p>Запись матча с экрана для разбора с тренером.</p>
+            <div class="row"><div class="price">300 ₽</div><a href="login.html" class="btn btn-secondary btn-sm">Заказать</a></div>
+          </div>
+          <div class="card offer" data-zone="all" data-type="extra" data-price="0">
+            <div class="row"><span class="ic-box cyan"><i data-i="lock"></i></span><span class="chip">Все зоны</span></div>
+            <h4 class="h4">Шкафчик для вещей</h4><p>Личный шкафчик на время визита.</p>
+            <div class="row"><div class="price">0 ₽</div><span class="chip green">Бесплатно</span></div>
+          </div>
+        </div>
+      </section>
+      <div class="card empty" id="empty"><h3 class="h4">Ничего не найдено</h3><p class="small" style="margin:8px 0 16px">Измените условия фильтра</p><button class="btn btn-secondary btn-sm" onclick="document.getElementById('reset').click()">Сбросить фильтры</button></div>
+    </main>
+  </div>
+
+  <!-- Бронирование -->
+  <section class="section" id="booking" data-figma="Бронирование">
+    <div class="section-head"><div><span class="overline">Онлайн-бронирование</span><h2 class="h2">Схема зала</h2></div>
+      <div class="legend"><span><i style="border-color:var(--success);background:rgba(46,229,157,.1)"></i>Свободно</span><span><i style="border-color:var(--warning);background:rgba(255,197,61,.1)"></i>Забронировано</span><span><i style="border-color:var(--danger);background:rgba(255,77,109,.1)"></i>Занято</span><span><i style="border-color:var(--border);background:var(--surface-2)"></i>Обслуживание</span><span><i style="border-color:var(--cyan);background:var(--cyan)"></i>Ваш выбор</span></div>
+    </div>
+    <div class="booking">
+      <div class="card hall">
+        <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="field"><label class="label">Дата</label><select class="input" id="bdate"><option value="2026-11-12">Чт, 12 ноября</option><option value="2026-11-13">Пт, 13 ноября</option><option value="2026-11-14" selected>Сб, 14 ноября</option><option value="2026-11-15">Вс, 15 ноября</option><option value="2026-11-16">Пн, 16 ноября</option><option value="2026-11-17">Вт, 17 ноября</option><option value="2026-11-18">Ср, 18 ноября</option></select></div>
+          <div class="field"><label class="label">Начало</label><select class="input" id="bstart"><option>16:00</option><option>17:00</option><option selected>18:00</option><option>19:00</option><option>20:00</option></select></div>
+          <div class="field"><label class="label">Продолжительность</label><select class="input" id="bdur"><option value="1">1 час</option><option value="2">2 часа</option><option value="3" selected>3 часа</option><option value="5">5 часов</option></select></div>
+        </div>
+        <div class="hall-zones">
+          <div class="hall-zone"><h5><span>STANDARD · 100 ₽/ч</span><span class="muted">Общий зал</span></h5><div class="seats std" id="std"></div></div>
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div class="hall-zone"><h5><span>VIP · 180 ₽/ч</span><span class="muted">Зал 2</span></h5><div class="seats vip" id="vip"></div></div>
+            <div class="hall-zone"><h5><span>BOOTCAMP · 700 ₽/ч</span><span class="muted">Комната</span></h5><div class="seats boot" id="boot"></div></div>
+            <div class="hall-zone" style="display:flex;justify-content:space-between;align-items:center;border-style:solid;background:var(--surface-2)"><span class="small" style="display:flex;gap:8px;align-items:center"><i data-i="user" class="ic-sm"></i>Ресепшен</span><span class="small" style="display:flex;gap:8px;align-items:center">Вход<i data-i="arrow-right" class="ic-sm"></i></span></div>
+          </div>
+        </div>
+      </div>
+      <aside class="card summary" data-figma="Итог брони">
+        <h3 class="h4">Ваша бронь</h3>
+        <div class="sum-row"><span>Место</span><b id="s-seat">—</b></div>
+        <div class="sum-row"><span>Зона</span><b id="s-zone">—</b></div>
+        <div class="sum-row"><span>Дата</span><b id="s-date">14 ноября</b></div>
+        <div class="sum-row"><span>Время</span><b id="s-time">18:00–21:00</b></div>
+        <div class="sum-row"><span>Тариф</span><b id="s-rate">—</b></div>
+        <div class="divider"></div>
+        <div class="sum-total"><span class="text-2">Итого</span><b id="s-total">0 ₽</b></div>
+        <div class="alert info"><i data-i="info" class="ic-sm"></i><span>Сумма блокируется на балансе. Бесплатная отмена — за 1 час до начала.</span></div>
+        <a href="login.html" class="btn btn-primary btn-block btn-lg" id="confirm">Подтвердить бронь</a>
+        <p class="small" style="text-align:center">Нет аккаунта? <a class="link" href="register.html">Зарегистрируйтесь</a></p>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<div data-footer></div>
+<script src="assets/app.js"></script>
+<script>
+const ZONES = { S: ['Standard', 100], V: ['VIP', 180], B: ['Bootcamp', 140] };
+const STATUS = { S03: 'busy', S04: 'busy', S07: 'booked', S08: 'booked', S11: 'busy', S12: 'busy', S13: 'busy', S16: 'service', S18: 'booked', S19: 'busy',
+  V01: 'busy', V02: 'busy', V05: 'booked', V07: 'busy', V08: 'busy', V10: 'service', B1: 'booked', B2: 'booked', B3: 'booked', B4: 'booked', B5: 'booked' };
+const LABEL = { free: 'свободно', busy: 'занято', booked: 'забронировано', service: 'обслуживание' };
+let selected = 'V04';
+function seatHTML(id) { const st = STATUS[id] || 'free'; return `<button class="seat ${st}${id === selected ? ' selected' : ''}" data-seat="${id}" title="${id} — ${LABEL[st]}">${id}</button>`; }
+function drawHall() {
+  std.innerHTML = Array.from({ length: 20 }, (_, i) => seatHTML('S' + String(i + 1).padStart(2, '0'))).join('');
+  vip.innerHTML = Array.from({ length: 10 }, (_, i) => seatHTML('V' + String(i + 1).padStart(2, '0'))).join('');
+  boot.innerHTML = Array.from({ length: 5 }, (_, i) => seatHTML('B' + (i + 1))).join('');
+  document.querySelectorAll('.seat.free').forEach(b => b.onclick = () => { selected = b.dataset.seat; drawHall(); summary(); });
+}
+const fmt = n => n.toLocaleString('ru-RU').replace(/ /g, ' ') + ' ₽';
+function summary() {
+  const [zone, rate] = ZONES[selected[0]]; const dur = +bdur.value; const [h] = bstart.value.split(':').map(Number);
+  const d = new Date(bdate.value);
+  document.getElementById('s-seat').textContent = selected; document.getElementById('s-zone').textContent = zone;
+  document.getElementById('s-date').textContent = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  document.getElementById('s-time').textContent = `${bstart.value}–${String((h + dur) % 24).padStart(2, '0')}:00`;
+  document.getElementById('s-rate').textContent = `${rate} ₽ × ${dur} ч`;
+  document.getElementById('s-total').textContent = fmt(rate * dur);
+}
+[bdate, bstart, bdur].forEach(e => e.onchange = summary);
+
+/* Фильтры каталога */
+function applyFilters() {
+  const zones = [...document.querySelectorAll('[name=zone]:checked')].map(i => i.value);
+  const types = [...document.querySelectorAll('[name=type]:checked')].map(i => i.value);
+  const tab = document.querySelector('#tabs .active').dataset.t;
+  const min = +pmin.value || 0, max = +pmax.value || Infinity, nightOnly = night.checked;
+  let any = false;
+  document.querySelectorAll('.cat-group').forEach(g => {
+    let n = 0;
+    g.querySelectorAll('.offer').forEach(c => {
+      const ok = (c.dataset.zone === 'all' ? zones.length > 0 : zones.includes(c.dataset.zone)) && types.includes(c.dataset.type) &&
+        (tab === 'all' || tab === c.dataset.type) && +c.dataset.price >= min && +c.dataset.price <= max && (!nightOnly || c.dataset.night);
+      c.style.display = ok ? '' : 'none'; if (ok) n++;
+    });
+    g.style.display = n ? '' : 'none'; if (n) any = true;
+  });
+  empty.style.display = any ? 'none' : 'block';
+}
+function applySort() {
+  const mode = sort.value;
+  document.querySelectorAll('.cat-group .grid-3').forEach(grid => {
+    const cards = [...grid.children];
+    if (!grid.dataset.orig) cards.forEach((c, i) => c.dataset.i = i), grid.dataset.orig = 1;
+    cards.sort((a, b) => mode === 'asc' ? a.dataset.price - b.dataset.price : mode === 'desc' ? b.dataset.price - a.dataset.price : a.dataset.i - b.dataset.i).forEach(c => grid.appendChild(c));
+  });
+}
+document.querySelectorAll('.filters input').forEach(i => i.addEventListener('input', applyFilters));
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('active')); b.classList.add('active'); applyFilters(); });
+sort.onchange = applySort;
+reset.onclick = () => { document.querySelectorAll('.filters input[type=checkbox]').forEach(i => i.checked = i.id !== 'night'); pmin.value = 0; pmax.value = 2000; document.querySelector('#tabs [data-t=all]').click(); };
+window.pageInit = q => { drawHall(); summary(); if (q.get('filter') === 'vip') { document.querySelector('[name=zone][value=standard]').checked = false; document.querySelector('[name=zone][value=bootcamp]').checked = false; applyFilters(); } };
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>Личный кабинет — TurboPC</title>
+<link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="account" data-auth="user">
+<div data-header></div>
+
+<div class="container">
+  <section class="page-head">
+    <div class="crumbs"><a href="index.html">Главная</a><span>/</span><span>Личный кабинет</span></div>
+    <h1 class="h2">Привет, Артём!</h1>
+  </section>
+
+  <div class="account">
+    <aside class="card side" data-figma="Меню кабинета">
+      <div class="who"><span class="avatar">АК</span><div><b>Артём К.</b><span>@turbo_artem</span></div></div>
+      <a href="#balance" class="active"><i data-i="wallet"></i>Баланс</a>
+      <a href="#bookings"><i data-i="calendar"></i>Мои брони</a>
+      <a href="#sessions"><i data-i="history"></i>История сессий</a>
+      <a href="#payments"><i data-i="receipt"></i>Платежи</a>
+      <a href="#tournaments"><i data-i="trophy"></i>Мои турниры</a>
+      <a href="#settings"><i data-i="sliders"></i>Настройки профиля</a>
+      <div class="divider" style="margin:12px 0"></div>
+      <a href="login.html"><i data-i="logout"></i>Выйти</a>
+    </aside>
+
+    <main class="acc-main">
+      <div class="acc-top" id="balance" data-figma="Баланс">
+        <div class="card balance-card">
+          <span class="small">Баланс</span>
+          <div class="sum">1 250 ₽</div>
+          <span class="small">Заблокировано под брони: 540 ₽</span>
+          <div style="display:flex;gap:12px;margin-top:12px"><button class="btn btn-primary" data-open="topup"><i data-i="plus" class="ic-sm"></i>Пополнить</button><a href="catalog.html" class="btn btn-secondary">Купить пакет</a></div>
+        </div>
+        <div class="card kpi"><span class="ic-box cyan"><i data-i="box"></i></span><span class="small">Пакет «5 часов VIP»</span><b>2 ч 40 мин</b><div class="progress"><i style="width:53%"></i></div><span class="small">Действует до 30 ноября</span></div>
+        <div class="card kpi"><span class="ic-box"><i data-i="clock"></i></span><span class="small">Наиграно в ноябре</span><b>18 ч</b><span class="small" style="color:var(--success)">+4 ч к октябрю</span></div>
+      </div>
+
+      <section class="card acc-section" id="bookings" data-figma="Активные брони">
+        <h3 class="h3">Активные брони <a href="catalog.html#booking" class="btn btn-secondary btn-sm"><i data-i="plus" class="ic-sm"></i>Новая бронь</a></h3>
+        <div class="booking-item"><div class="pc">V04<span>VIP</span></div><div><h4>Сб, 14 ноября · 18:00–21:00</h4><p>VIP · 3 часа · 540 ₽ заблокировано на балансе</p></div><span class="chip green"><span class="dot"></span>Подтверждена</span><button class="btn btn-danger btn-sm">Отменить</button></div>
+        <div class="booking-item"><div class="pc">S09<span>STD</span></div><div><h4>Вс, 22 ноября · 12:00–14:00</h4><p>Standard · 2 часа · оплата из пакета часов</p></div><span class="chip amber"><span class="dot"></span>Ожидает начала</span><button class="btn btn-danger btn-sm">Отменить</button></div>
+      </section>
+
+      <div class="two-col">
+        <section class="card acc-section" id="sessions" data-figma="История сессий">
+          <h3 class="h3">История сессий</h3>
+          <table class="table"><thead><tr><th>Дата</th><th>Место</th><th>Время</th><th>Сумма</th></tr></thead><tbody>
+            <tr><td><b>09.11</b></td><td>V02</td><td>3 ч 10 мин</td><td><b>570 ₽</b></td></tr>
+            <tr><td><b>06.11</b></td><td>S14</td><td>Ночь</td><td><b>450 ₽</b></td></tr>
+            <tr><td><b>02.11</b></td><td>V07</td><td>2 ч</td><td><b>Пакет</b></td></tr>
+            <tr><td><b>29.10</b></td><td>S05</td><td>4 ч 30 мин</td><td><b>450 ₽</b></td></tr>
+          </tbody></table>
+        </section>
+        <section class="card acc-section" id="payments" data-figma="История платежей">
+          <h3 class="h3">Платежи</h3>
+          <table class="table"><thead><tr><th>Дата</th><th>Операция</th><th>Сумма</th></tr></thead><tbody>
+            <tr><td><b>12.11</b></td><td>Блокировка: бронь V04</td><td class="amount-minus">−540 ₽</td></tr>
+            <tr><td><b>10.11</b></td><td>Пополнение, СБП</td><td class="amount-plus">+1 000 ₽</td></tr>
+            <tr><td><b>09.11</b></td><td>Сессия V02</td><td class="amount-minus">−570 ₽</td></tr>
+            <tr><td><b>01.11</b></td><td>Пакет «5 часов VIP»</td><td class="amount-minus">−780 ₽</td></tr>
+          </tbody></table>
+        </section>
+      </div>
+
+      <section class="card acc-section" id="tournaments" data-figma="Мои турниры">
+        <h3 class="h3">Мои турниры <a href="index.html#tournaments" class="btn btn-ghost btn-sm">Все турниры <i data-i="arrow-right" class="ic-sm"></i></a></h3>
+        <div class="grid-2">
+          <div class="card" style="background:var(--surface-2);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between"><span class="chip cyan">Тактический шутер · 5×5</span><span class="chip green">Заявка принята</span></div>
+            <h4 class="h4">Turbo Cup: Осень</h4>
+            <div class="tour-meta"><span><i data-i="calendar"></i>21 ноября, 18:00</span><span><i data-i="users"></i>Команда «Night Owls»</span></div>
+            <div class="sum-row"><span>Взнос 1 000 ₽ оплачен</span><a href="#" class="link">Сетка турнира</a></div>
+          </div>
+          <div class="card" style="background:var(--surface-2);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between"><span class="chip cyan">Файтинг · 1×1</span><span class="chip">Завершён</span></div>
+            <h4 class="h4">Дуэль выходного дня #7</h4>
+            <div class="tour-meta"><span><i data-i="calendar"></i>25 октября</span><span><i data-i="trophy"></i>2 место · приз 1 500 ₽</span></div>
+            <div class="sum-row"><span>Приз зачислен на баланс</span><a href="#" class="link">Результаты</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card acc-section" id="settings" data-figma="Настройки профиля">
+        <h3 class="h3">Настройки профиля</h3>
+        <div class="two-col">
+          <form class="form-grid" style="grid-template-columns:1fr 1fr;align-content:start" onsubmit="event.preventDefault();saved.style.display='flex'">
+            <div class="field"><label class="label">Имя</label><input class="input" value="Артём"></div>
+            <div class="field"><label class="label">Никнейм</label><input class="input" value="turbo_artem"></div>
+            <div class="field"><label class="label">Телефон</label><input class="input" type="tel" value="+7 (913) 123-45-67"></div>
+            <div class="field"><label class="label">E-mail</label><input class="input" value="artem@example.com"></div>
+            <div class="field" style="grid-column:1/-1"><label class="label">Новый пароль</label><div class="input-wrap"><input class="input" type="password" placeholder="Оставьте пустым, чтобы не менять"><button type="button" class="ic-btn" data-toggle-pass><i data-i="eye" class="ic-sm"></i></button></div></div>
+            <div style="grid-column:1/-1;display:flex;gap:12px;align-items:center"><button class="btn btn-primary">Сохранить</button><button type="reset" class="btn btn-ghost">Отмена</button><span id="saved" class="chip green" style="display:none"><i data-i="check" class="ic-sm"></i>Сохранено</span></div>
+          </form>
+          <div>
+            <h4 class="h4" style="margin-bottom:8px">Уведомления</h4>
+            <div class="toggle"><span>Напоминание о брони за 1 час</span><button class="switch on" aria-label="Переключатель"></button></div>
+            <div class="toggle"><span>Окончание оплаченного времени</span><button class="switch on" aria-label="Переключатель"></button></div>
+            <div class="toggle"><span>Новые турниры</span><button class="switch on" aria-label="Переключатель"></button></div>
+            <div class="toggle"><span>Акции и скидки</span><button class="switch" aria-label="Переключатель"></button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Модальное окно пополнения баланса -->
+<div class="modal-bg" id="topup" data-figma="Пополнение баланса">
+  <div class="card modal">
+    <div class="modal-head"><h3 class="h3">Пополнение баланса</h3><button class="modal-close" data-close><i data-i="x" class="ic-sm"></i></button></div>
+    <div class="field"><label class="label">Сумма, ₽</label><input class="input" id="amount" value="1000"></div>
+    <div class="amounts"><button>300</button><button>500</button><button class="active">1000</button><button>2000</button></div>
+    <div><span class="label">Способ оплаты</span><div class="pay-methods" style="margin-top:8px"><button class="active"><i data-i="bolt" class="ic-sm"></i>СБП</button><button><i data-i="card" class="ic-sm"></i>Карта</button><button><i data-i="wallet" class="ic-sm"></i>На стойке</button></div></div>
+    <div class="alert info"><i data-i="info" class="ic-sm"></i><span>При пополнении от 500 ₽ — бонусный час в зоне Standard.</span></div>
+    <button class="btn btn-primary btn-lg btn-block" id="pay">Оплатить 1 000 ₽</button>
+  </div>
+</div>
+
+<div data-footer></div>
+<script src="assets/app.js"></script>
+<script>
+window.pageInit = () => {
+  const amount = document.getElementById('amount'), pay = document.getElementById('pay');
+  const upd = () => pay.textContent = 'Оплатить ' + (+amount.value || 0).toLocaleString('ru-RU').replace(/ /g, ' ') + ' ₽';
+  document.querySelectorAll('.amounts button').forEach(b => b.onclick = () => { document.querySelectorAll('.amounts button').forEach(x => x.classList.remove('active')); b.classList.add('active'); amount.value = b.textContent; upd(); });
+  document.querySelectorAll('.pay-methods button').forEach(b => b.onclick = () => { document.querySelectorAll('.pay-methods button').forEach(x => x.classList.remove('active')); b.classList.add('active'); });
+  amount.oninput = upd;
+  pay.onclick = () => { pay.closest('.modal-bg').classList.remove('open'); };
+  const links = [...document.querySelectorAll('.side a[href^="#"]')];
+  const onScroll = () => { let cur = links[0]; links.forEach(a => { const s = document.querySelector(a.getAttribute('href')); if (s && s.getBoundingClientRect().top < 160) cur = a; }); links.forEach(a => a.classList.toggle('active', a === cur)); };
+  addEventListener('scroll', onScroll); onScroll();
+};
+</script>
+</body>
+</html>

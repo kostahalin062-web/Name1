@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>Обратная связь — TurboPC</title>
+<link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="feedback" data-auth="guest">
+<div data-header></div>
+
+<div class="container">
+  <section class="page-head">
+    <div class="crumbs"><a href="index.html">Главная</a><span>/</span><span>Обратная связь</span></div>
+    <h1 class="h1">Обратная связь</h1>
+    <p class="body-l" style="margin-top:12px;max-width:640px">Вопрос о брони, идея для турнира или жалоба — напишите нам. Администратор ответит в течение 30 минут.</p>
+  </section>
+
+  <div class="fb" id="fb">
+    <div class="card" style="padding:0" data-figma="Форма заявки">
+      <form class="fb-form" id="form" novalidate>
+        <div class="form-grid">
+          <div class="field"><label class="label" for="f-name">Имя <span class="req">*</span></label><input class="input" id="f-name" name="name" placeholder="Как к вам обращаться" data-rules="required name"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+          <div class="field"><label class="label" for="f-phone">Телефон <span class="req">*</span></label><input class="input" id="f-phone" name="phone" type="tel" placeholder="+7 (___) ___-__-__" data-rules="required phone"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+        </div>
+        <div class="field"><label class="label" for="f-topic">Тема обращения <span class="req">*</span></label>
+          <select class="input" id="f-topic" name="topic" data-rules="required"><option value="">Выберите тему</option><option>Бронирование</option><option>Оплата и баланс</option><option>Турниры</option><option>Техническая проблема</option><option>Предложение</option><option>Другое</option></select>
+          <span class="err"><i data-i="alert" class="ic-sm"></i><span>Выберите тему</span></span></div>
+        <div class="field"><label class="label" for="f-msg">Сообщение <span class="req">*</span></label><textarea class="input" id="f-msg" name="message" maxlength="1000" placeholder="Опишите вопрос подробнее" data-rules="required min20"></textarea>
+          <div style="display:flex;justify-content:space-between"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span><span class="hint">Не короче 20 символов</span><span class="counter" id="counter">0 / 1000</span></div></div>
+        <label class="check" id="consent-wrap"><input type="checkbox" id="consent" required><span>Я согласен на <a href="#">обработку персональных данных</a> в соответствии с 152-ФЗ</span></label>
+        <div class="err" id="consent-err" style="margin-top:-12px"><i data-i="alert" class="ic-sm"></i><span>Необходимо согласие на обработку данных</span></div>
+        <div style="display:flex;gap:16px;align-items:center"><button class="btn btn-primary btn-lg" id="submit"><i data-i="send" class="ic-sm"></i>Отправить</button><span class="small">Поля, отмеченные <span class="accent">*</span>, обязательны</span></div>
+      </form>
+      <div class="success-box" data-figma="Сообщение об успешной отправке">
+        <div class="ok"><i data-i="check" class="ic-lg"></i></div>
+        <h2 class="h2">Заявка отправлена!</h2>
+        <p class="body-l" style="max-width:440px">Спасибо, <span id="who">Артём</span>! Номер обращения <b style="color:var(--text)">№ 2026-0418</b>. Мы ответим по телефону или в SMS в течение 30 минут.</p>
+        <div style="display:flex;gap:12px"><a href="index.html" class="btn btn-primary">На главную</a><a href="feedback.html" class="btn btn-secondary">Новое обращение</a></div>
+      </div>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:24px">
+      <div class="card contact-list" data-figma="Контакты">
+        <h3 class="h4">Связаться напрямую</h3>
+        <div class="contact-item"><span class="ic-box cyan"><i data-i="phone"></i></span><div><span>Телефон, круглосуточно</span><b>+7 (3852) 00-00-00</b></div></div>
+        <div class="contact-item"><span class="ic-box cyan"><i data-i="mail"></i></span><div><span>Почта</span><b>hello@turbopc.example</b></div></div>
+        <div class="contact-item"><span class="ic-box"><i data-i="pin"></i></span><div><span>Адрес</span><b>ул. Скоростная, 7</b></div></div>
+      </div>
+      <div class="card" data-figma="Частые вопросы">
+        <h3 class="h4" style="margin-bottom:4px">Частые вопросы</h3>
+        <div class="faq-item"><h4>Можно ли отменить бронь?</h4><p>Да, бесплатно — не позднее чем за 1 час до начала в личном кабинете.</p></div>
+        <div class="faq-item"><h4>С какого возраста можно играть?</h4><p>С 14 лет. Ночные пакеты — с 18 лет.</p></div>
+        <div class="faq-item"><h4>Как вернуть деньги с баланса?</h4><p>Оставьте обращение с темой «Оплата и баланс».</p></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div data-footer></div>
+<script src="assets/app.js"></script>
+<script>
+window.pageInit = q => {
+  const form = document.getElementById('form'), msg = document.getElementById('f-msg');
+  const cw = document.getElementById('consent-wrap'), ce = document.getElementById('consent-err'), cb = document.getElementById('consent');
+  msg.addEventListener('input', () => counter.textContent = msg.value.length + ' / 1000');
+  const syncConsent = () => { const bad = !cb.checked; cw.classList.toggle('has-error', bad); ce.style.display = bad ? 'flex' : 'none'; };
+  cb.addEventListener('change', syncConsent);
+  bindForm(form, () => { who.textContent = document.getElementById('f-name').value.trim(); document.getElementById('fb').classList.add('sent'); scrollTo(0, 0); });
+  form.addEventListener('submit', syncConsent);
+  if (q.get('state') === 'error') {
+    document.getElementById('f-name').value = 'А1'; document.getElementById('f-phone').value = '+7 (913) 12';
+    msg.value = 'Не работает'; counter.textContent = '11 / 1000';
+    form.requestSubmit();
+  }
+  if (q.get('state') === 'success') document.getElementById('fb').classList.add('sent');
+};
+</script>
+</body>
+</html>

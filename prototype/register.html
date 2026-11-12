@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>Регистрация — TurboPC</title>
+<link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="register" data-auth="guest">
+<div data-header></div>
+<div class="auth">
+  <div class="auth-art" data-figma="Промо-панель">
+    <img class="art" src="assets/auth-art.svg" alt="" style="object-fit:cover;object-position:50% 100%">
+    <div class="content">
+      <span class="chip orange" style="align-self:flex-start"><i data-i="bolt" class="ic-sm"></i>Первый час в подарок</span>
+      <blockquote>
+        <h2 class="h2">Присоединяйся<br>к <span class="grad-text">TurboPC</span></h2>
+        <ul class="list-check" style="margin-top:28px">
+          <li><i data-i="check"></i>Онлайн-бронь любого из 35 мест</li>
+          <li><i data-i="check"></i>Пакеты часов со скидкой до 16%</li>
+          <li><i data-i="check"></i>Турниры с призовым фондом</li>
+          <li><i data-i="check"></i>Уведомления о брони и окончании времени</li>
+        </ul>
+      </blockquote>
+      <span class="small">Уже есть аккаунт? <a href="login.html" class="link">Войти</a></span>
+    </div>
+  </div>
+  <div class="auth-side">
+    <form class="auth-card" id="form" novalidate data-figma="Форма регистрации" style="width:520px">
+      <div><h1 class="h2">Регистрация</h1><p class="small" style="margin-top:8px">Заполните данные — это займёт меньше минуты</p></div>
+      <div class="alert error" id="sum-err" style="display:none"><i data-i="alert" class="ic-sm"></i><span>Исправьте ошибки в отмеченных полях</span></div>
+      <div class="form-grid">
+        <div class="field"><label class="label" for="r-name">Имя <span class="req">*</span></label><input class="input" id="r-name" name="name" placeholder="Артём" data-rules="required name"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+        <div class="field"><label class="label" for="r-nick">Никнейм <span class="req">*</span></label><input class="input" id="r-nick" name="nick" placeholder="turbo_artem" data-rules="required nick"><span class="hint">Латиница, цифры, _</span><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+        <div class="field"><label class="label" for="r-phone">Телефон <span class="req">*</span></label><input class="input" id="r-phone" name="phone" type="tel" placeholder="+7 (___) ___-__-__" data-rules="required phone"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+        <div class="field"><label class="label" for="r-email">E-mail <span class="req">*</span></label><input class="input" id="r-email" name="email" placeholder="mail@example.com" data-rules="required email"><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+      </div>
+      <div class="field"><label class="label" for="r-birth">Дата рождения <span class="req">*</span></label><input class="input" id="r-birth" name="birth" type="text" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" data-rules="age"><span class="hint">Клуб доступен с 14 лет</span><span class="err"><i data-i="alert" class="ic-sm"></i><span>Укажите дату рождения</span></span></div>
+      <div class="form-grid">
+        <div class="field"><label class="label" for="r-pass">Пароль <span class="req">*</span></label><div class="input-wrap"><input class="input" id="r-pass" name="password" type="password" placeholder="Минимум 8 символов" data-rules="required password"><button type="button" class="ic-btn" data-toggle-pass aria-label="Показать пароль"><i data-i="eye" class="ic-sm"></i></button></div>
+          <div class="strength" id="strength"><i></i><i></i><i></i><i></i></div><span class="hint" id="strength-t">Надёжность пароля</span><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+        <div class="field"><label class="label" for="r-pass2">Повторите пароль <span class="req">*</span></label><div class="input-wrap"><input class="input" id="r-pass2" name="password2" type="password" placeholder="Ещё раз" data-rules="required same"><button type="button" class="ic-btn" data-toggle-pass aria-label="Показать пароль"><i data-i="eye" class="ic-sm"></i></button></div><span class="err"><i data-i="alert" class="ic-sm"></i><span>Заполните поле</span></span></div>
+      </div>
+      <label class="check" id="consent-wrap"><input type="checkbox" id="consent" required><span>Принимаю <a href="#">правила клуба</a> и даю согласие на <a href="#">обработку персональных данных</a></span></label>
+      <button class="btn btn-primary btn-lg btn-block">Создать аккаунт</button>
+      <p class="switch-mode">Уже есть аккаунт? <a href="login.html">Войти</a></p>
+    </form>
+  </div>
+</div>
+<div data-footer></div>
+<script src="assets/app.js"></script>
+<script>
+window.pageInit = q => {
+  const form = document.getElementById('form'), pass = document.getElementById('r-pass');
+  const strength = () => { const v = pass.value; let s = 0; if (v.length >= 8) s++; if (/\d/.test(v)) s++; if (/[A-ZА-Я]/.test(v) && /[a-zа-я]/.test(v)) s++; if (/[^A-Za-zА-Яа-я0-9]/.test(v) && v.length >= 10) s++;
+    document.getElementById('strength').className = 'strength' + (v ? ' s' + Math.max(1, s) : ''); document.getElementById('strength-t').textContent = v ? ['Слабый пароль', 'Слабый пароль', 'Средний пароль', 'Надёжный пароль', 'Очень надёжный пароль'][s] : 'Надёжность пароля'; };
+  pass.addEventListener('input', strength);
+  const cw = document.getElementById('consent-wrap');
+  bindForm(form, () => location.href = 'account.html');
+  form.addEventListener('submit', () => { const bad = form.querySelectorAll('.has-error').length > 0; document.getElementById('sum-err').style.display = bad ? 'flex' : 'none'; });
+  if (q.get('state') === 'error') {
+    const set = (id, v) => document.getElementById(id).value = v;
+    set('r-name', 'Артём'); set('r-nick', 'артём!'); set('r-phone', '+7 (913) 123-4'); set('r-email', 'artem@mail'); set('r-birth', '10.05.2015');
+    set('r-pass', 'turbo123'); set('r-pass2', 'turbo124'); strength();
+    form.requestSubmit();
+  }
+};
+</script>
+</body>
+</html>
