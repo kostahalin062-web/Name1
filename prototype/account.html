@@ -111,12 +111,12 @@
 <!-- Модальное окно пополнения баланса -->
 <div class="modal-bg" id="topup" data-figma="Пополнение баланса">
   <div class="card modal">
-    <div class="modal-head"><h3 class="h3">Пополнение баланса</h3><button class="modal-close" data-close><i data-i="x" class="ic-sm"></i></button></div>
+    <div class="modal-head"><h3 class="h3">Пополнение баланса</h3><button class="modal-close" data-close data-proto="close"><i data-i="x" class="ic-sm"></i></button></div>
     <div class="field"><label class="label">Сумма, ₽</label><input class="input" id="amount" value="1000"></div>
     <div class="amounts"><button>300</button><button>500</button><button class="active">1000</button><button>2000</button></div>
     <div><span class="label">Способ оплаты</span><div class="pay-methods" style="margin-top:8px"><button class="active"><i data-i="bolt" class="ic-sm"></i>СБП</button><button><i data-i="card" class="ic-sm"></i>Карта</button><button><i data-i="wallet" class="ic-sm"></i>На стойке</button></div></div>
     <div class="alert info"><i data-i="info" class="ic-sm"></i><span>При пополнении от 500 ₽ — бонусный час в зоне Standard.</span></div>
-    <button class="btn btn-primary btn-lg btn-block" id="pay">Оплатить 1 000 ₽</button>
+    <button class="btn btn-primary btn-lg btn-block" id="pay" data-proto="submit">Оплатить 1 000 ₽</button>
   </div>
 </div>
 
