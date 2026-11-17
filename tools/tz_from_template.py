@@ -141,8 +141,22 @@ def table_works():
     add(t)
 
 
+def set_widths(t, widths):
+    grid = t.find(qn('w:tblGrid'))
+    for gc, w in zip(grid.findall(qn('w:gridCol')), widths):
+        gc.set(qn('w:w'), str(w))
+    for tr in t.findall(qn('w:tr')):
+        for tc, w in zip(tr.findall(qn('w:tc')), widths):
+            tcpr = tc.find(qn('w:tcPr'))
+            if tcpr is None:
+                tcpr = OxmlElement('w:tcPr'); tc.insert(0, tcpr)
+            for e in tcpr.findall(qn('w:tcW')): tcpr.remove(e)
+            e = OxmlElement('w:tcW'); e.set(qn('w:w'), str(w)); e.set(qn('w:type'), 'dxa'); tcpr.insert(0, e)
+
+
 def table_accept():
     t = copy.deepcopy(T_accept)
+    set_widths(t, [1800, 1650, 1600, 3050, 1256])
     for r, dates in zip(t.findall(qn('w:tr'))[1:], ACCEPT_DATES):
         tc = r.findall(qn('w:tc'))[2]; set_text(tc.find(qn('w:p')), dates)
         for tc in r.findall(qn('w:tc')):

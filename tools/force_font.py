@@ -46,5 +46,18 @@ for root in parts:
         rp = ppr.find(qn('w:rPr'))
         if rp is not None:
             fix_rpr(rp)
+# заголовок оглавления — по центру, жирный (как в шаблоне)
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+for para in d.element.iter(qn('w:p')):
+    txt = ''.join(t.text or '' for t in para.iter(qn('w:t'))).strip()
+    if txt in ('Оглавление', 'Содержание'):
+        ppr = para.find(qn('w:pPr'))
+        if ppr is None:
+            ppr = OxmlElement('w:pPr'); para.insert(0, ppr)
+        for e in ppr.findall(qn('w:jc')): ppr.remove(e)
+        jc = OxmlElement('w:jc'); jc.set(qn('w:val'), 'center'); ppr.append(jc)
+        for r in para.iter(qn('w:r')):
+            rp = get_rpr(r)
+            if rp.find(qn('w:b')) is None: rp.append(OxmlElement('w:b'))
 d.save(sys.argv[1])
 print('runs fixed:', n)
