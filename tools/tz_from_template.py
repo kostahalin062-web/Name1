@@ -48,7 +48,7 @@ def set_text(p_el, text, bold=None, italic_prefix=None):
         if ital:
             rp.append(OxmlElement('w:i'))
         r.append(rp)
-        for k, seg in enumerate(t.split('\t')):
+        for k, seg in enumerate(t.replace('\t', ' ').split('\t')):
             if k:
                 r.append(OxmlElement('w:tab'))
             te = OxmlElement('w:t'); te.set(qn('xml:space'), 'preserve'); te.text = seg; r.append(te)
