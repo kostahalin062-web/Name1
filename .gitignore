@@ -2,3 +2,4 @@ tools/_reference.docx
 *.pdf
 node_modules/
 __pycache__/
+*.zip
