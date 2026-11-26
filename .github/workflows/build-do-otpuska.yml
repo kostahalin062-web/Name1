@@ -75,9 +75,7 @@ jobs:
           NOTES="Приложение «До отпуска» для Android. Версия 1.0.${{ github.run_number }}, собрано $(date -u '+%Y-%m-%d %H:%M') UTC.
 
           Скачайте файл do-otpuska.apk ниже и откройте его на телефоне."
-          if ! gh release view do-otpuska >/dev/null 2>&1; then
-            gh release create do-otpuska --target "${{ github.sha }}" --title "До отпуска — APK" --notes "$NOTES" --latest=false
-          else
-            gh release edit do-otpuska --notes "$NOTES"
-          fi
-          gh release upload do-otpuska do-otpuska.apk --clobber
+          # старая сборка удаляется целиком (релиз и тег), остаётся только свежая
+          gh release delete do-otpuska --yes --cleanup-tag 2>/dev/null || true
+          git push origin :refs/tags/do-otpuska 2>/dev/null || true
+          gh release create do-otpuska do-otpuska.apk --target "${{ github.sha }}" --title "До отпуска — APK" --notes "$NOTES" --latest=false
