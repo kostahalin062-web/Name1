@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Settings and the list of alarm series, kept in SharedPreferences. */
+/** Settings and the record of alarm series handed to the Clock app, kept in SharedPreferences. */
 final class Store {
     static final String DEFAULT_URL = "https://kostahalin062-web.github.io/Name1/schedule.ics";
     static final String ASU_URL = "https://www.asu.ru/timetable/students/15/2129441855/?file=2129441855.ics";
@@ -43,6 +43,13 @@ final class Store {
     void setSpanMin(int v) { p.edit().putInt("span", v).apply(); }
     void setUrl(String v) { p.edit().putString("url", v).apply(); }
     void setLastUpdate(long v) { p.edit().putLong("lastUpdate", v).apply(); }
+
+    /** Evening reminder "set the alarms for tomorrow?". */
+    boolean reminderOn() { return p.getBoolean("reminderOn", true); }
+    /** Time of the evening reminder, minutes from midnight. */
+    int reminderMin() { return p.getInt("reminderMin", 21 * 60); }
+    void setReminderOn(boolean v) { p.edit().putBoolean("reminderOn", v).apply(); }
+    void setReminderMin(int v) { p.edit().putInt("reminderMin", v).apply(); }
 
     /** Minutes to subtract from the first lesson to get the "get up by" time. */
     int prepMin() { return prep(roadMin(), morningMin(), showerMin(), shower()); }
@@ -116,6 +123,12 @@ final class Store {
         }
         list.add(s);
         saveSeries(list);
+    }
+
+    /** Series already set for the day {@code dateKey} (yyyy-MM-dd), or null. */
+    synchronized Series seriesFor(String dateKey) {
+        for (Series s : series()) if (dateKey.equals(s.dateKey)) return s;
+        return null;
     }
 
     synchronized void removeSeries(String id) {

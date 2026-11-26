@@ -31,7 +31,7 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Тесты логики (расписание, подсказка, серии)
+      - name: Тесты логики (расписание, подсказка, серии, 24 часа)
         run: gradle -p android --no-daemon testDebugUnitTest
 
       - name: Включить KVM для эмулятора
@@ -40,7 +40,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Тесты на эмуляторе (будильник реально звонит)
+      - name: Тесты на эмуляторе (будильники попадают в системные «Часы»)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34

@@ -1,6 +1,7 @@
 package ru.para.budilnik;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,15 +120,47 @@ public class LogicTest {
         assertEquals(Arrays.asList(300L), ringTimes(series(300, 300, 5)));
     }
 
-    @Test public void nearestAlarmAcrossSeries() {
-        Store.Series a = series(300, 330, 5);
-        a.id = "a";
-        Store.Series b = series(302, 302, 5);
-        b.id = "b";
-        Object[] n = Alarms.next(Arrays.asList(a, b), 300 * 60000L);
-        assertEquals(302L, (Long) n[0] / 60000L);
-        assertEquals("b", ((Store.Series) n[1]).id);
-        assertNull(Alarms.next(Arrays.asList(a, b), 330 * 60000L));
+    // ---------- alarms for the system Clock app ----------
+
+    private static LocalDateTime dt(int day, int h, int m) { return LocalDateTime.of(2026, 11, day, h, m); }
+
+    @Test public void clockAlarmTimesEveryFiveMinutes() {
+        List<LocalDateTime> t = Alarms.times(dt(27, 5, 0), dt(27, 5, 30), 5);
+        assertEquals(7, t.size());
+        assertEquals(dt(27, 5, 0), t.get(0));
+        assertEquals(dt(27, 5, 30), t.get(6));
+        assertEquals(Arrays.asList(dt(27, 5, 0), dt(27, 5, 7), dt(27, 5, 14), dt(27, 5, 21), dt(27, 5, 28)),
+                Alarms.times(dt(27, 5, 0), dt(27, 5, 30), 7));
+    }
+
+    @Test public void clockAlarmTimesAcrossMidnight() {
+        List<LocalDateTime> t = Alarms.times(dt(26, 23, 50), dt(27, 0, 10), 10);
+        assertEquals(Arrays.asList(dt(26, 23, 50), dt(27, 0, 0), dt(27, 0, 10)), t);
+    }
+
+    @Test public void clockAlarmTimesEmptyWhenFromAfterTo() {
+        assertTrue(Alarms.times(dt(27, 6, 0), dt(27, 5, 0), 5).isEmpty());
+    }
+
+    @Test public void clockRingsOnlyWithinTheNext24Hours() {
+        LocalDateTime now = dt(26, 21, 0);
+        assertTrue(Alarms.settable(dt(27, 5, 0), now));
+        assertFalse("already passed", Alarms.settable(dt(26, 20, 59), now));
+        assertFalse("now is not ahead", Alarms.settable(now, now));
+        assertTrue("exactly 24 h", Alarms.settable(dt(27, 21, 0), now));
+        assertFalse("more than 24 h would ring a day too early", Alarms.settable(dt(27, 21, 1), now));
+    }
+
+    @Test public void targetDayIsTodayWhileTodaysWakeIsAhead() {
+        assertEquals(LocalDate.of(2026, 11, 27), Alarms.targetDay(dt(27, 4, 0), dt(27, 6, 30)));
+        assertEquals(LocalDate.of(2026, 11, 28), Alarms.targetDay(dt(27, 7, 0), dt(27, 6, 30)));
+        assertEquals("no lessons today", LocalDate.of(2026, 11, 28), Alarms.targetDay(dt(27, 4, 0), null));
+    }
+
+    @Test public void eveningReminderNextTime() {
+        assertEquals(dt(26, 21, 0), Reminder.nextTime(dt(26, 18, 0), 21 * 60));
+        assertEquals("already past today", dt(27, 21, 0), Reminder.nextTime(dt(26, 21, 0), 21 * 60));
+        assertEquals(dt(27, 21, 0), Reminder.nextTime(dt(26, 22, 30), 21 * 60));
     }
 
     /** The real timetable file of the "Моё ДЗ" app parses and has lessons. */

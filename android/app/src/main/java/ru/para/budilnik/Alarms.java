@@ -1,86 +1,68 @@
 package ru.para.budilnik;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import android.content.pm.PackageManager;
+import android.provider.AlarmClock;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Only the nearest alarm is handed to the system (as a real "alarm clock",
- * shown in the status bar); when it rings, the next one is scheduled.
+ * Alarms are not rung by this app: they are handed to the phone's own "Clock" app
+ * (AlarmClock.ACTION_SET_ALARM). The system clock only knows "hours:minutes" and
+ * rings at the next such moment, so alarms can be set only for the next 24 hours.
  */
 final class Alarms {
-    static final String ACTION_FIRE = "ru.para.budilnik.FIRE";
-    static final String EXTRA_SERIES = "series";
-    static final String EXTRA_TIME = "time";
-
     private Alarms() { }
 
-    /** Nearest alarm time after {@code after} with its series, or null. */
-    static Object[] next(List<Store.Series> list, long after) {
-        long best = -1;
-        Store.Series bestS = null;
-        for (Store.Series s : list) {
-            long t = s.nextAfter(after);
-            if (t > 0 && (best < 0 || t < best)) { best = t; bestS = s; }
-        }
-        return bestS == null ? null : new Object[]{best, bestS};
+    /** Ring times of a series: from, from+interval, ... not later than to. */
+    static List<LocalDateTime> times(LocalDateTime from, LocalDateTime to, int interval) {
+        List<LocalDateTime> out = new ArrayList<>();
+        if (interval < 1 || from.isAfter(to)) return out;
+        for (LocalDateTime t = from; !t.isAfter(to); t = t.plusMinutes(interval)) out.add(t);
+        return out;
     }
 
-    static boolean canExact(Context c) {
-        if (Build.VERSION.SDK_INT < 31) return true;
-        AlarmManager am = c.getSystemService(AlarmManager.class);
-        return am != null && am.canScheduleExactAlarms();
+    /** Can the system clock ring at {@code t}, i.e. is it within the next 24 hours? */
+    static boolean settable(LocalDateTime t, LocalDateTime now) {
+        return t.isAfter(now) && !t.isAfter(now.plusHours(24));
     }
 
-    /** Re-arms the system alarm. {@code after}: only alarms later than this time. */
-    static void reschedule(Context c, long after) {
-        Context app = c.getApplicationContext();
-        Store store = new Store(app);
-        long now = System.currentTimeMillis();
-        store.dropFinished(now);
-        AlarmManager am = app.getSystemService(AlarmManager.class);
-        if (am == null) return;
+    /**
+     * Day the alarms are for: today, if today's "get up by" time is still ahead,
+     * otherwise tomorrow.
+     */
+    static LocalDate targetDay(LocalDateTime now, LocalDateTime todayWake) {
+        if (todayWake != null && todayWake.isAfter(now)) return now.toLocalDate();
+        return now.toLocalDate().plusDays(1);
+    }
 
-        Intent fire = new Intent(app, AlarmReceiver.class).setAction(ACTION_FIRE);
-        PendingIntent cancel = PendingIntent.getBroadcast(app, 0, fire,
-                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
-        if (cancel != null) { am.cancel(cancel); cancel.cancel(); }
+    /** Intent for the Clock app: a one-time alarm, set silently when the Clock supports it. */
+    static Intent setIntent(LocalDateTime t, String label) {
+        Intent i = new Intent(AlarmClock.ACTION_SET_ALARM)
+                .putExtra(AlarmClock.EXTRA_HOUR, t.getHour())
+                .putExtra(AlarmClock.EXTRA_MINUTES, t.getMinute())
+                .putExtra(AlarmClock.EXTRA_SKIP_UI, true)
+                .putExtra(AlarmClock.EXTRA_VIBRATE, true);
+        if (label != null && !label.isEmpty()) i.putExtra(AlarmClock.EXTRA_MESSAGE, label);
+        return i;
+    }
 
-        Object[] n = next(store.series(), Math.max(after, now - 1));
-        if (n == null) return;
-        long t = (Long) n[0];
-        Store.Series s = (Store.Series) n[1];
-        fire.putExtra(EXTRA_SERIES, s.id).putExtra(EXTRA_TIME, t);
-        PendingIntent op = PendingIntent.getBroadcast(app, 0, fire,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        PendingIntent show = PendingIntent.getActivity(app, 1,
-                new Intent(app, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    static boolean hasClock(Context c) {
+        return c.getPackageManager().resolveActivity(
+                new Intent(AlarmClock.ACTION_SET_ALARM), PackageManager.MATCH_DEFAULT_ONLY) != null;
+    }
+
+    /** Opens the list of alarms in the Clock app. */
+    static boolean openClock(Context c) {
         try {
-            if (canExact(app)) {
-                am.setAlarmClock(new AlarmManager.AlarmClockInfo(t, show), op);
-            } else {
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, t, op);
-            }
-        } catch (SecurityException e) {
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, t, op);
+            c.startActivity(new Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            return true;
+        } catch (RuntimeException e) {
+            return false;
         }
-    }
-
-    /** Test alarm in a few seconds, to check sound and permissions. */
-    static void test(Context c, int seconds) {
-        Store.Series s = new Store.Series();
-        s.id = "test-" + System.currentTimeMillis();
-        s.dateKey = "test";
-        s.start = System.currentTimeMillis() + seconds * 1000L;
-        s.end = s.start;
-        s.interval = 1;
-        s.label = "Проверка будильника";
-        new Store(c).putSeries(s);
-        reschedule(c, 0);
     }
 }
