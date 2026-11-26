@@ -153,6 +153,12 @@
   /* ---------- встреча ---------- */
   body.home .title, body.home #center, body.home .target, body.home .gear, body.home .pct { display: none !important; }
 
+  #soldier.left svg { transform: scaleX(-1); }
+  #soldier.waving .thigh, #soldier.waving .shin, #soldier.waving .uarm, #soldier.waving .farm, #soldier.waving .bodyg { animation: none; }
+  #soldier.waving .uarm.n { visibility: hidden; }
+  #soldier .warm { display: none; }
+  #soldier.waving .warm { display: inline; }
+  #soldier .wfa { transform-box: view-box; transform-origin: 33.6px 22.6px; animation: wave2 .42s ease-in-out infinite alternate; }
   #friend { width: 42px; height: 70px; bottom: var(--base); left: max(5vw, 14px); }
   #friend svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; animation: fadeIn 1.2s ease-out both; }
   #friend .kua, #friend .kfa { transform-box: view-box; }
@@ -164,6 +170,7 @@
   #friend .kfa.f { transform: rotate(-14deg); }
   #friend .kbody { animation: idle 1.8s ease-in-out infinite alternate; }
   @keyframes wave { from { transform: rotate(-20deg); } to { transform: rotate(-46deg); } }
+  @keyframes wave2 { from { transform: rotate(18deg); } to { transform: rotate(-14deg); } }
   @keyframes idle { from { transform: translateY(0); } to { transform: translateY(-.8px); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .sshadow.k { left: 4px; right: 2px; }
@@ -219,10 +226,9 @@
     background: rgba(255,255,255,.06); color: #fff; font: inherit; font-size: 16px; color-scheme: dark;
   }
   .btns { display: flex; gap: 10px; margin-top: 18px; }
-  .btns button, .demo { flex: 1; padding: 12px; border-radius: 12px; border: 0; font: inherit; font-weight: 600; cursor: pointer; }
+  .btns button { flex: 1; padding: 12px; border-radius: 12px; border: 0; font: inherit; font-weight: 600; cursor: pointer; }
   .save { background: linear-gradient(90deg, var(--glow), var(--glow2)); color: #05060f; }
   .cancel { background: rgba(255,255,255,.08); color: #eef; }
-  .demo { width: 100%; margin-top: 10px; background: transparent; color: var(--glow); border: 1px dashed rgba(127,255,212,.4); }
 
   @media (max-height: 640px) {
     .wrap { padding-top: calc(env(safe-area-inset-top) + 40px); }
@@ -529,6 +535,15 @@
         <path d="M20.2 8.6 Q26.2 6.4 31.8 8.1" stroke="#78854b" stroke-width=".6" fill="none"/>
         <circle cx="30.6" cy="10.3" r="1.5" fill="#d4af37"/>
         <path d="M30.6 9.2 L30.95 10.05 L31.85 10.1 L31.15 10.65 L31.4 11.5 L30.6 11 L29.8 11.5 L30.05 10.65 L29.35 10.1 L30.25 10.05 Z" fill="#c8261c"/>
+        <!-- рука, которой машет из двери (поверх головы) -->
+        <g class="warm">
+          <path d="M25.6 29.4 L33.6 22.6" stroke="url(#camo)" stroke-width="5.4" stroke-linecap="round"/>
+          <g class="wfa">
+            <path d="M33.6 22.6 L35.4 13" stroke="url(#camo)" stroke-width="4.8" stroke-linecap="round"/>
+            <circle cx="35.7" cy="10.8" r="2.5" fill="#efbf98"/>
+            <rect x="34.9" y="7" width="1.6" height="3" rx=".8" fill="#efbf98"/>
+          </g>
+        </g>
         <!-- рука при отдании чести (поверх головы) -->
         <g class="sarm">
           <path d="M25.6 29.4 L34 23.2" stroke="url(#camo)" stroke-width="5.4" stroke-linecap="round"/>
@@ -557,7 +572,6 @@
       <button class="cancel" id="cancel">Отмена</button>
       <button class="save" id="save">Сохранить</button>
     </div>
-    <button class="demo" id="demo">▶ Посмотреть, как улетит самолёт</button>
   </div>
 </div>
 
@@ -619,7 +633,7 @@
   });
 
   /* ---------- посадка и взлёт ---------- */
-  let phase = 'walk', runId = 0, demo = false, flight = null, landing = null, home = false, homeGlow = 0;
+  let phase = 'walk', runId = 0, flight = null, landing = null, home = false, homeGlow = 0;
 
   async function launch() {
     if (phase !== 'walk') return;
@@ -685,7 +699,6 @@
       if (tau >= 1) f.done = true;
     }
     applyPlane(x, y, rot, sc, op);
-    if (f.done && demo) setTimeout(() => { if (f.my === runId) { demo = false; resetScene(); tick(); } }, 2500);
   }
 
   function applyPlane(x, y, rot, sc, op) {
@@ -742,19 +755,27 @@
   /* ---------- встреча ---------- */
   async function startHome() {
     const my = ++runId;
-    home = true; demo = false; phase = 'home'; flight = null; particles.length = 0;
+    home = true; phase = 'home'; flight = null; particles.length = 0;
     document.body.classList.add('home');
     $('panel').classList.remove('open');
     $('welcome').hidden = false; $('citysign').hidden = false;
     clearTimeout(saluteTimer);
     soldier.getAnimations().forEach(a => a.cancel());
-    soldier.classList.remove('salute', 'ready', 'gone');
+    soldier.classList.remove('salute', 'ready', 'gone', 'left', 'waving');
     soldier.style.visibility = 'hidden';
     planeEl.classList.add('closed', 'gearup', 'll');
     friend.hidden = false;
     await new Promise(res => startLanding(res)); if (my !== runId) return;
     await wait(500); if (my !== runId) return;
     planeEl.classList.remove('closed');                     // дверь открывается, подъезжает трап
+    await wait(900); if (my !== runId) return;
+    // Женя появляется в двери и машет в ответ
+    const sr = scene.getBoundingClientRect(), pr = planeEl.getBoundingClientRect(), k = pr.width / VBW;
+    soldier.style.transition = 'none';
+    soldier.style.left = (pr.left - sr.left + STAIR_FOOT * k - FEET - 1) + 'px';
+    soldier.classList.add('left', 'waving'); soldier.style.visibility = '';
+    const s = (DOOR_H * k * 1.05) / SOLDIER_H, door = `translate(${(DOOR_X - STAIR_FOOT) * k}px, ${-SILL * k}px) scale(${s})`;
+    soldier.animate([{ transform: door, opacity: 0 }, { transform: door, opacity: 1 }], { duration: 900, easing: 'ease-out', fill: 'forwards' });
     if (navigator.vibrate) try { navigator.vibrate(40); } catch (e) {}
   }
 
@@ -814,7 +835,7 @@
     if (home) return;
     const diff = new Date(targetStr) - new Date();
     const over = isNaN(diff) || diff <= 0;
-    if (over || demo) { showDone(true); if (over) launch(); return; }
+    if (over) { showDone(true); launch(); return; }
     showDone(false);
     const span = new Date(targetStr) - new Date(startStr);
     const progress = span > 0 ? clamp(1 - diff / span, 0, 1) : 0;
@@ -839,11 +860,7 @@
     let f = $('from').value;
     if (f) { if (f.length === 16) f += ':00'; startStr = f; store.set('cd_start', f); }
     titleStr = $('name').value.trim() || DEFAULT_TITLE; store.set('cd_title', titleStr);
-    $('panel').classList.remove('open'); demo = false; resetScene(); renderStatic(); tick();
-  };
-  $('demo').onclick = () => {
-    $('panel').classList.remove('open');
-    resetScene(); demo = true; tick(); launch();
+    $('panel').classList.remove('open'); resetScene(); renderStatic(); tick();
   };
 
   renderStatic(); tick();
