@@ -48,14 +48,39 @@
         <textarea id="hw-text" rows="3" placeholder="Например: решить задачи 1–5, стр. 42"></textarea>
       </label>
       <p id="due-preview" class="due-preview"></p>
+      <button type="button" id="btn-when" class="mini-btn">⏰ Свой срок или время</button>
       <label class="switch-row">
-        <span>🔔 Напомнить накануне<small id="remind-preview"></small></span>
+        <span>🔔 <span id="remind-title">Напомнить накануне</span><small id="remind-preview"></small></span>
         <input type="checkbox" id="hw-remind" checked>
         <i class="switch" aria-hidden="true"></i>
       </label>
       <div class="actions">
         <button value="cancel" class="btn ghost">Закрыть</button>
         <button id="btn-add-hw" value="add" class="btn primary">Добавить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Custom deadline / reminder time -->
+  <dialog id="dlg-when" class="sheet">
+    <form method="dialog">
+      <h3>Срок и напоминание</h3>
+      <p id="when-subject"></p>
+      <label class="field">
+        <span>Сдать до</span>
+        <input id="when-due" type="date">
+        <small id="when-due-hint" class="hint"></small>
+      </label>
+      <label class="field">
+        <span>Напомнить</span>
+        <input id="when-remind" type="datetime-local">
+        <small id="when-remind-hint" class="hint"></small>
+      </label>
+      <button type="button" id="btn-when-quick" class="mini-btn">Заполнить: накануне срока</button>
+      <div class="actions">
+        <button id="btn-when-reset" class="btn ghost">Как обычно</button>
+        <button value="cancel" class="btn ghost">Отмена</button>
+        <button id="btn-when-save" value="save" class="btn primary">Готово</button>
       </div>
     </form>
   </dialog>

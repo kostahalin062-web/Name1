@@ -74,15 +74,31 @@
   // The lesson it is due for is looked up every time: the next lesson with the same
   // subject in the current schedule. So when the schedule changes or the next lesson
   // appears on the site later, the homework automatically moves to the right lesson.
-  function dueLesson(h) {
+  function nextLesson(h) {
     const from = h.fromDate + 'T' + (h.fromStart || '00:00');
     for (const l of state.lessons) {
       if (l.subject === h.subject && !l.cancelled && lkey(l) > from) return l;
     }
     return null;
   }
+  // When the homework is due: a deadline chosen by hand (h.dueDate) wins,
+  // otherwise the next lesson of the same subject.
+  function due(h) {
+    if (h.dueDate) {
+      const lesson = state.lessons.find((l) => l.subject === h.subject && l.date === h.dueDate && !l.cancelled) || null;
+      return { date: h.dueDate, lesson, custom: true };
+    }
+    const lesson = nextLesson(h);
+    return lesson ? { date: lesson.date, lesson, custom: false } : null;
+  }
+  const dueKey = (d) => (d ? d.date + 'T' + (d.lesson ? d.lesson.start : '23:59') : '9999');
+  function dueText(d) {
+    if (!d) return '⏳ ждёт следующую пару в расписании';
+    return d.lesson ? `📅 к паре ${prettyDate(d.date).toLowerCase()}, ${d.lesson.start}`
+      : `📅 сдать до ${prettyDate(d.date).toLowerCase()}`;
+  }
   function hwFor(lesson) {
-    return state.homework.filter((h) => { const d = dueLesson(h); return d && d.uid === lesson.uid; });
+    return state.homework.filter((h) => { const d = due(h); return d && d.lesson && d.lesson.uid === lesson.uid; });
   }
   function hwGivenAt(lesson) {
     return state.homework.filter((h) => h.fromUid === lesson.uid ||
@@ -175,13 +191,30 @@
   }
 
   // ---------- reminders ----------
-  // Fires the day before the lesson the homework is due for, at settings.remindTime.
-  function remindAtFor(lesson) {
-    if (!lesson) return null;
+  // By default fires the day before the due date at settings.remindTime;
+  // a time chosen by hand (h.remindAt, "YYYY-MM-DDTHH:MM") wins.
+  function defaultRemindAt(date) {
+    if (!date) return null;
     const [hh, mm] = (state.settings.remindTime || '18:00').split(':').map(Number);
-    const d = addDays(fromYmd(lesson.date), -1);
+    const d = addDays(fromYmd(date), -1);
     d.setHours(hh || 0, mm || 0, 0, 0);
     return d.getTime();
+  }
+  function parseLocal(s) {
+    const [date, time] = s.split('T');
+    const d = fromYmd(date);
+    const [hh, mm] = (time || '00:00').split(':').map(Number);
+    d.setHours(hh || 0, mm || 0, 0, 0);
+    return d.getTime();
+  }
+  function toLocalInput(ms) {
+    const d = new Date(ms);
+    return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function remindAt(h) {
+    if (h.remindAt) return parseLocal(h.remindAt);
+    const d = due(h);
+    return d ? defaultRemindAt(d.date) : null;
   }
   function remindLabel(at) {
     const d = new Date(at);
@@ -193,16 +226,23 @@
     const list = [];
     for (const h of state.homework) {
       if (!h.remind || h.done) continue;
-      const l = dueLesson(h);
-      const at = remindAtFor(l);
+      const d = due(h);
+      const at = remindAt(h);
       if (at == null) continue;
+      let when = '';
+      if (d) {
+        const days = Math.round((fromYmd(d.date) - fromYmd(ymd(new Date(at)))) / 86400000);
+        when = days === 0 ? 'Сегодня' : days === 1 ? 'Завтра' : 'К ' + prettyDate(d.date).toLowerCase();
+      }
+      const l = d && d.lesson;
       list.push({
         id: h.id,
         key: h.id + '@' + at,
         at,
         from: Date.parse(h.remindFrom || h.createdAt) || 0,
-        title: `📝 Завтра: ${h.subject}`,
-        body: `${h.text}\nПара: ${prettyDate(l.date)}, ${l.start}${l.room ? ', ауд. ' + l.room : ''}`,
+        title: `📝 ${when ? when + ': ' : ''}${h.subject}`,
+        body: h.text + (l ? `\nПара: ${prettyDate(l.date)}, ${l.start}${l.room ? ', ауд. ' + l.room : ''}`
+          : d ? `\nСдать до: ${prettyDate(d.date)}` : ''),
       });
     }
     if (LN) scheduleNative(list);
@@ -331,7 +371,7 @@
     let dueToday = 0, dueTomorrow = 0;
     for (const h of state.homework) {
       if (h.done) continue;
-      const d = dueLesson(h);
+      const d = due(h);
       if (d && d.date === today) dueToday++;
       if (d && d.date === tomorrow) dueTomorrow++;
     }
@@ -355,8 +395,8 @@
 
   function renderHomework() {
     const today = todayYmd();
-    const pending = state.homework.filter((h) => !h.done).map((h) => ({ h, l: dueLesson(h) }));
-    pending.sort((a, b) => (a.l ? lkey(a.l) : '9999').localeCompare(b.l ? lkey(b.l) : '9999'));
+    const pending = state.homework.filter((h) => !h.done).map((h) => ({ h, d: due(h) }));
+    pending.sort((a, b) => dueKey(a.d).localeCompare(dueKey(b.d)));
     const done = state.homework.filter((h) => h.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
 
     let html = '';
@@ -365,7 +405,7 @@
     } else {
       const groups = new Map();
       for (const it of pending) {
-        const k = it.l ? it.l.date : '';
+        const k = it.d ? it.d.date : '';
         if (!groups.has(k)) groups.set(k, []);
         groups.get(k).push(it);
       }
@@ -386,21 +426,22 @@
   }
 
   function hwItem(h, showSubject) {
-    const l = dueLesson(h);
     let meta = '';
     if (!h.done) {
-      meta = l ? `📅 к паре ${esc(prettyDate(l.date).toLowerCase())}, ${esc(l.start)}` : '⏳ ждёт следующую пару в расписании';
+      meta = esc(dueText(due(h)));
       if (h.remind) {
-        const at = remindAtFor(l);
+        const at = remindAt(h);
         meta += at ? ` · 🔔 ${esc(remindLabel(at))}` : ' · 🔔 вкл.';
       }
+      // small button: change the deadline / reminder time
+      meta = `<button class="hw-when" data-act="when" aria-label="Изменить срок и время напоминания">${meta} <span class="edit">✎</span></button>`;
     }
     return `<li class="hw ${h.done ? 'done' : ''}" data-id="${esc(h.id)}">
       <button class="check" data-act="toggle" aria-label="${h.done ? 'Отметить невыполненным' : 'Отметить выполненным'}">${h.done ? '✓' : ''}</button>
       <div class="hw-body">
         ${showSubject ? `<div class="hw-subj">${esc(h.subject)}</div>` : ''}
         <div class="hw-text">${esc(h.text)}</div>
-        ${meta ? `<div class="hw-remind">${meta}</div>` : ''}
+        ${meta}
       </div>
       ${!h.done ? `<button class="bell ${h.remind ? 'on' : ''}" data-act="bell" aria-label="${h.remind ? 'Выключить напоминание' : 'Включить напоминание'}">${h.remind ? '🔔' : '🔕'}</button>` : ''}
       <button class="del" data-act="delete" aria-label="Удалить">✕</button>
@@ -420,6 +461,7 @@
     renderLessonHw();
     $('#hw-text').value = '';
     $('#hw-remind').checked = state.settings.remindDefault !== false;
+    state.draft = { dueDate: null, remindAt: null };
     updateDuePreview();
     if ($('#dlg-pick').open) $('#dlg-pick').close();
     $('#dlg-lesson').showModal();
@@ -428,16 +470,85 @@
   function updateDuePreview() {
     const l = state.openLesson;
     if (!l) return;
-    const next = dueLesson({ subject: l.subject, fromDate: l.date, fromStart: l.start });
-    $('#due-preview').innerHTML = next
-      ? `📅 Сдать к следующей паре: <b>${esc(prettyDate(next.date).toLowerCase())}, ${esc(next.start)}</b> · ${esc(next.type)}`
-      : '⏳ Следующей пары по этому предмету пока нет в расписании. Как только она появится на сайте, ДЗ привяжется к ней автоматически.';
-    const at = remindAtFor(next);
+    const draft = draftHw();
+    const d = due(draft);
+    if (draft.dueDate) {
+      $('#due-preview').innerHTML = `📅 Сдать до: <b>${esc(prettyDate(d.date).toLowerCase())}</b>${d.lesson ? ` (пара в ${esc(d.lesson.start)})` : ''}`;
+    } else {
+      $('#due-preview').innerHTML = d
+        ? `📅 Сдать к следующей паре: <b>${esc(prettyDate(d.date).toLowerCase())}, ${esc(d.lesson.start)}</b> · ${esc(d.lesson.type)}`
+        : '⏳ Следующей пары по этому предмету пока нет в расписании. Как только она появится на сайте, ДЗ привяжется к ней автоматически.';
+    }
+    const at = remindAt(draft);
     const el = $('#remind-preview');
+    $('#remind-title').textContent = draft.remindAt ? 'Напомнить' : 'Напомнить накануне';
     if (!$('#hw-remind').checked) el.textContent = 'выключено';
-    else if (!next) el.textContent = 'накануне следующей пары, когда она появится';
+    else if (at == null) el.textContent = 'накануне следующей пары, когда она появится';
     else if (at <= Date.now()) el.textContent = 'время уже прошло — напоминания не будет';
     else el.textContent = remindLabel(at);
+  }
+
+  function draftHw() {
+    const l = state.openLesson;
+    return { subject: l.subject, fromDate: l.date, fromStart: l.start,
+      dueDate: state.draft && state.draft.dueDate, remindAt: state.draft && state.draft.remindAt };
+  }
+
+  // ---------- "✎" : custom deadline and reminder time ----------
+  // target: { draft: true } for the homework being written, or { id } for a saved one.
+  function openWhen(target) {
+    state.whenTarget = target;
+    const h = target.draft ? draftHw() : state.homework.find((x) => x.id === target.id);
+    if (!h) return;
+    $('#when-subject').textContent = h.subject;
+    $('#when-due').value = h.dueDate || '';
+    $('#when-remind').value = h.remindAt || '';
+    updateWhenHints();
+    $('#dlg-when').showModal();
+  }
+  function whenBase() {
+    const t = state.whenTarget;
+    return t.draft ? draftHw() : state.homework.find((x) => x.id === t.id);
+  }
+  function updateWhenHints() {
+    const base = whenBase();
+    if (!base) return;
+    const auto = nextLesson(base);
+    $('#when-due-hint').textContent = auto
+      ? `Пусто — к следующей паре: ${prettyDate(auto.date).toLowerCase()}, ${auto.start}`
+      : 'Пусто — к следующей паре, когда она появится в расписании';
+    const dueDate = $('#when-due').value || (auto && auto.date);
+    const def = defaultRemindAt(dueDate);
+    $('#when-remind-hint').textContent = def
+      ? `Пусто — накануне: ${remindLabel(def)}`
+      : 'Пусто — накануне срока';
+  }
+  function saveWhen() {
+    const dueDate = $('#when-due').value || null;
+    const remindAtV = $('#when-remind').value || null;
+    const t = state.whenTarget;
+    if (t.draft) {
+      state.draft = { dueDate, remindAt: remindAtV };
+      if (remindAtV) $('#hw-remind').checked = true;
+      updateDuePreview();
+      return;
+    }
+    const h = state.homework.find((x) => x.id === t.id);
+    if (!h) return;
+    h.dueDate = dueDate;
+    h.remindAt = remindAtV;
+    h.remindFrom = new Date().toISOString();
+    if (remindAtV) h.remind = true;
+    save();
+    render();
+    if (state.openLesson && $('#dlg-lesson').open) { renderLessonHw(); updateDuePreview(); }
+    if (h.remind) {
+      ensureNotifyPermission();
+      const at = remindAt(h);
+      toast(at == null ? 'Сохранено' : at > Date.now() ? 'Напомню ' + remindLabel(at) : 'Сохранено · время напоминания уже прошло');
+    } else {
+      toast('Сохранено');
+    }
   }
 
   function renderLessonHw() {
@@ -456,11 +567,14 @@
     const text = $('#hw-text').value.trim();
     if (!l || !text) return false;
     const remind = $('#hw-remind').checked;
+    const draft = state.draft || {};
     state.homework.push({
       id: uid(), subject: l.subject, text,
       fromUid: l.uid, fromDate: l.date, fromStart: l.start,
+      dueDate: draft.dueDate || null, remindAt: draft.remindAt || null,
       remind, done: false, createdAt: new Date().toISOString(),
     });
+    state.draft = { dueDate: null, remindAt: null };
     save();
     if (remind) ensureNotifyPermission();
     return true;
@@ -478,12 +592,15 @@
       if (h.remind) {
         h.remindFrom = new Date().toISOString();
         ensureNotifyPermission();
-        const at = remindAtFor(dueLesson(h));
+        const at = remindAt(h);
         toast(!at ? 'Напомню накануне, когда пара появится в расписании'
           : at > Date.now() ? 'Напомню ' + remindLabel(at) : 'Время напоминания уже прошло');
       } else {
         toast('Напоминание выключено');
       }
+    } else if (act === 'when') {
+      openWhen({ id });
+      return;
     } else if (act === 'delete') {
       if (!confirm('Удалить задание?')) return;
       state.homework.splice(i, 1);
@@ -549,6 +666,24 @@
     }
   };
   $('#dlg-lesson').addEventListener('close', () => { state.openLesson = null; });
+  $('#btn-when').onclick = () => openWhen({ draft: true });
+  $('#when-due').oninput = updateWhenHints;
+  $('#btn-when-save').onclick = saveWhen;
+  $('#btn-when-reset').onclick = (e) => {
+    e.preventDefault();
+    $('#when-due').value = '';
+    $('#when-remind').value = '';
+    updateWhenHints();
+  };
+  $('#btn-when-quick').onclick = (e) => {
+    // quick fill: remind at the usual time the day before the chosen deadline
+    e.preventDefault();
+    const base = whenBase();
+    const auto = base && nextLesson(base);
+    const dueDate = $('#when-due').value || (auto && auto.date);
+    const def = defaultRemindAt(dueDate);
+    $('#when-remind').value = toLocalInput(def || Date.now() + 3600 * 1000);
+  };
   $('#hw-remind').onchange = () => {
     updateDuePreview();
     if ($('#hw-remind').checked) ensureNotifyPermission();
