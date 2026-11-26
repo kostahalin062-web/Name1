@@ -21,6 +21,7 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
@@ -144,7 +145,7 @@ public class AlarmOnDeviceTest {
         screenshot("2-alarm-locked");
 
         UiObject2 btn = device.findObject(By.text("Выключить"));
-        assertNotNull(btn);
+        assertNotNull("button \"Выключить\" on the lock screen", btn);
         btn.click();
         assertTrue("sound stops", waitFor(() -> !AlarmService.sounding, 10000));
     }
@@ -169,8 +170,10 @@ public class AlarmOnDeviceTest {
         assertTrue("main screen opened", device.wait(Until.hasObject(By.text("⏰ Будильник на пары")), 15000));
         screenshot("3-main");
 
-        UiObject2 set = device.wait(Until.findObject(By.text("Поставить будильники")), 5000);
-        assertNotNull(set);
+        UiObject2 scroll = device.findObject(By.scrollable(true));
+        assertNotNull("screen scrolls", scroll);
+        UiObject2 set = scroll.scrollUntil(Direction.DOWN, Until.findObject(By.text("Поставить будильники")));
+        assertNotNull("button \"Поставить будильники\" found after scrolling", set);
         set.click();
         assertTrue("series saved", waitFor(() -> store.series().size() == 1, 5000));
         Store.Series s = store.series().get(0);
