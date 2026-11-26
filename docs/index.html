@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cut">
+  <meta name="theme-color" content="#3b5bdb">
+  <title>Моё ДЗ</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-row">
+      <h1 id="title">Расписание</h1>
+      <button id="btn-refresh" class="icon-btn" aria-label="Обновить расписание" title="Обновить расписание">⟳</button>
+      <button id="btn-menu" class="icon-btn" aria-label="Настройки" title="Настройки">⋮</button>
+    </div>
+    <div id="week-nav" class="week-nav">
+      <button id="prev-week" class="icon-btn" aria-label="Предыдущая неделя">‹</button>
+      <button id="this-week" class="week-label"></button>
+      <button id="next-week" class="icon-btn" aria-label="Следующая неделя">›</button>
+    </div>
+    <div id="status" class="status"></div>
+  </header>
+
+  <main>
+    <section id="view-schedule"></section>
+    <section id="view-homework" hidden></section>
+  </main>
+
+  <nav class="tabs">
+    <button data-tab="schedule" class="tab active"><span>📅</span>Расписание</button>
+    <button data-tab="homework" class="tab"><span>📝</span>ДЗ <b id="hw-badge" hidden></b></button>
+  </nav>
+
+  <!-- Lesson / homework editor -->
+  <dialog id="dlg-lesson" class="sheet">
+    <form method="dialog" id="form-hw">
+      <div id="lesson-info"></div>
+      <h3>Задания</h3>
+      <ul id="lesson-hw" class="hw-list"></ul>
+      <label class="field">
+        <span>Новое задание</span>
+        <textarea id="hw-text" rows="3" placeholder="Например: решить задачи 1–5, стр. 42"></textarea>
+      </label>
+      <label class="field">
+        <span>Сдать к</span>
+        <select id="hw-due"></select>
+      </label>
+      <div class="actions">
+        <button value="cancel" class="btn ghost">Закрыть</button>
+        <button id="btn-add-hw" value="add" class="btn primary">Добавить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="dlg-settings" class="sheet">
+    <form method="dialog">
+      <h3>Настройки</h3>
+      <label class="field">
+        <span>Ссылка на экспорт расписания (.ics)</span>
+        <input id="set-url" type="url" inputmode="url">
+      </label>
+      <p class="hint">Приложение пробует скачать расписание по этой ссылке, а если сайт не пускает — берёт копию, которую GitHub обновляет каждые несколько часов.</p>
+      <label class="btn ghost file-btn">
+        Загрузить файл .ics вручную
+        <input id="set-file" type="file" accept=".ics,text/calendar" hidden>
+      </label>
+      <label class="btn ghost file-btn">
+        Восстановить ДЗ из резервной копии
+        <input id="set-restore" type="file" accept=".json,application/json" hidden>
+      </label>
+      <button type="button" id="btn-backup" class="btn ghost">Сохранить резервную копию ДЗ</button>
+      <div class="actions">
+        <button value="cancel" class="btn ghost">Отмена</button>
+        <button id="btn-save-settings" value="save" class="btn primary">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="ics.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
