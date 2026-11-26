@@ -102,11 +102,9 @@ public class AlarmOnDeviceTest {
 
         assertEquals("next alarm of the series is already scheduled", s.start + 60000, nextSystemAlarm());
 
-        UiObject2 btn = device.wait(Until.findObject(By.text("Я встал — убрать остальные")), 10000);
-        assertNotNull("button \"Я встал\" is on screen", btn);
-        btn.click();
-
-        assertTrue("sound stops", waitFor(() -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000));
+        tap("Я встал — убрать остальные");
+        assertTrue("sound stops; on screen: " + visibleTexts(),
+                waitFor(() -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000));
         assertTrue("remaining alarms of the series removed", store.series().isEmpty());
         assertEquals("no system alarm left", -1, nextSystemAlarm());
     }
@@ -118,11 +116,9 @@ public class AlarmOnDeviceTest {
         Alarms.reschedule(ctx, 0);
         assertTrue("rings", waitFor(() -> s.id.equals(AlarmService.ringingSeries), 25000));
 
-        UiObject2 btn = device.wait(Until.findObject(By.text("Выключить")), 10000);
-        assertNotNull("button \"Выключить\" is on screen", btn);
-        btn.click();
-
-        assertTrue("sound stops", waitFor(() -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000));
+        tap("Выключить");
+        assertTrue("sound stops; on screen: " + visibleTexts(),
+                waitFor(() -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000));
         assertEquals("series stays", 1, store.series().size());
         assertEquals("next alarm in 2 minutes", s.start + 120000, nextSystemAlarm());
     }
@@ -143,10 +139,8 @@ public class AlarmOnDeviceTest {
                 device.wait(Until.hasObject(By.text("Пора вставать")), 10000));
         screenshot("2-alarm-locked");
 
-        UiObject2 btn = device.findObject(By.text("Выключить"));
-        assertNotNull("button \"Выключить\" on the lock screen", btn);
-        btn.click();
-        assertTrue("sound stops", waitFor(() -> !AlarmService.sounding, 10000));
+        tap("Выключить");
+        assertTrue("sound stops; on screen: " + visibleTexts(), waitFor(() -> !AlarmService.sounding, 10000));
     }
 
     @Test
@@ -202,9 +196,25 @@ public class AlarmOnDeviceTest {
         return s;
     }
 
+    /**
+     * Presses a button like a person would: on the alarm screen if it is open,
+     * otherwise on the alarm notification.
+     */
+    private void tap(String text) {
+        UiObject2 b = device.wait(Until.findObject(By.pkg(PKG).text(text)), 5000);
+        String where = "alarm screen";
+        if (b == null) {
+            b = device.findObject(By.text(text));
+            where = "notification";
+        }
+        assertNotNull("button \"" + text + "\" not found; on screen: " + visibleTexts(), b);
+        Log.i(TAG, "tap \"" + text + "\" on " + where);
+        b.click();
+    }
+
     private String visibleTexts() {
         StringBuilder b = new StringBuilder();
-        for (UiObject2 o : device.findObjects(By.pkg(PKG))) {
+        for (UiObject2 o : device.findObjects(By.textContains(""))) {
             String t = o.getText();
             if (t != null && !t.isEmpty()) b.append('[').append(t.replace('\n', ' ')).append("] ");
         }
