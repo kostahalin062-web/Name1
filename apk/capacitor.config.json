@@ -1,0 +1,15 @@
+{
+  "appId": "ru.moedz.app",
+  "appName": "Моё ДЗ",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": true },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_dz",
+      "iconColor": "#3b5bdb"
+    }
+  }
+}

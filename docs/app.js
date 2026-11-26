@@ -3,6 +3,12 @@
 
   const DEFAULT_URL = 'https://www.asu.ru/timetable/students/15/2129441855/?file=2129441855.ics';
   const LOCAL_ICS = './schedule.ics';
+  const PAGES_ICS = 'https://kostahalin062-web.github.io/Name1/schedule.ics';
+
+  // Running inside the Android app (APK built with Capacitor)?
+  const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const Plugins = NATIVE ? (window.Capacitor.Plugins || {}) : {};
+  const LN = Plugins.LocalNotifications || null;
   const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
@@ -129,7 +135,7 @@
     if (manual || !state.lessons.length) setStatus('Обновляю расписание…');
     const sources = [];
     if (state.settings.url) sources.push([state.settings.url, 'сайт АлтГУ']);
-    sources.push([LOCAL_ICS + '?t=' + Date.now(), 'копия на GitHub']);
+    sources.push([(NATIVE ? PAGES_ICS : LOCAL_ICS) + '?t=' + Date.now(), 'копия на GitHub']);
     let ok = false;
     for (const [url, name] of sources) {
       try { applyICS(await fetchText(url), name); ok = true; break; } catch { /* try next source */ }
@@ -183,7 +189,7 @@
   }
 
   function syncReminders() {
-    if (!window.ReminderDB) return;
+    if (!LN && !window.ReminderDB) return;
     const list = [];
     for (const h of state.homework) {
       if (!h.remind || h.done) continue;
@@ -199,16 +205,54 @@
         body: `${h.text}\nПара: ${prettyDate(l.date)}, ${l.start}${l.room ? ', ауд. ' + l.room : ''}`,
       });
     }
-    window.ReminderDB.set('reminders', list).catch(() => {});
+    if (LN) scheduleNative(list);
+    else window.ReminderDB.set('reminders', list).catch(() => {});
+  }
+
+  // In the APK reminders are real Android alarms: exact time, even when the app is closed.
+  const TEST_NOTIFICATION_ID = 1;
+  function nativeId(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+    return (Math.abs(h) % 2000000000) + 10;
+  }
+  let nativeChain = Promise.resolve();
+  function scheduleNative(list) {
+    nativeChain = nativeChain.then(async () => {
+      const perm = await LN.checkPermissions();
+      if (perm.display !== 'granted') return;
+      const pending = (await LN.getPending()).notifications.filter((n) => n.id !== TEST_NOTIFICATION_ID);
+      if (pending.length) await LN.cancel({ notifications: pending.map((n) => ({ id: n.id })) });
+      const now = Date.now();
+      const items = list.filter((r) => r.at > now && r.at > r.from).map((r) => ({
+        id: nativeId(r.key),
+        title: r.title,
+        body: r.body,
+        largeBody: r.body,
+        smallIcon: 'ic_stat_dz',
+        schedule: { at: new Date(r.at), allowWhileIdle: true },
+        extra: { goto: 'homework' },
+      }));
+      if (items.length) await LN.schedule({ notifications: items });
+    }).catch(() => {});
   }
 
   async function fireDueReminders() {
-    if (!window.ReminderDB || !('serviceWorker' in navigator)) return;
+    if (NATIVE || !window.ReminderDB || !('serviceWorker' in navigator)) return;
     try { await window.ReminderDB.fireDue(await navigator.serviceWorker.ready); } catch { /* ignore */ }
   }
 
   // Returns true when notifications are allowed (asks the first time).
   async function ensureNotifyPermission() {
+    if (LN) {
+      try {
+        let p = await LN.checkPermissions();
+        if (p.display !== 'granted') p = await LN.requestPermissions();
+        if (p.display === 'granted') { syncReminders(); return true; }
+      } catch { /* ignore */ }
+      toast('Уведомления запрещены — разрешите их в настройках Android');
+      return false;
+    }
     if (typeof Notification === 'undefined') { toast('Этот браузер не поддерживает уведомления'); return false; }
     if (Notification.permission === 'default') {
       try { await Notification.requestPermission(); } catch { /* ignore */ }
@@ -222,6 +266,7 @@
   }
 
   async function setupBackgroundSync() {
+    if (NATIVE) return;
     try {
       const reg = await navigator.serviceWorker.ready;
       if (!('periodicSync' in reg)) return;
@@ -524,6 +569,15 @@
   };
   $('#btn-test-notify').onclick = async () => {
     if (!(await ensureNotifyPermission())) return;
+    if (LN) {
+      await LN.schedule({ notifications: [{
+        id: TEST_NOTIFICATION_ID, title: '📝 Проверка напоминаний',
+        body: 'Уведомления работают! Так будет выглядеть напоминание о ДЗ.',
+        smallIcon: 'ic_stat_dz', schedule: { at: new Date(Date.now() + 2000), allowWhileIdle: true },
+      }] });
+      toast('Уведомление придёт через пару секунд');
+      return;
+    }
     const reg = await navigator.serviceWorker.ready;
     reg.showNotification('📝 Проверка напоминаний', {
       body: 'Уведомления работают! Так будет выглядеть напоминание о ДЗ.',
@@ -542,8 +596,21 @@
     } catch (err) { alert('Не удалось прочитать файл: ' + err.message); }
     e.target.value = '';
   };
-  $('#btn-backup').onclick = () => {
-    const blob = new Blob([JSON.stringify({ homework: state.homework }, null, 2)], { type: 'application/json' });
+  $('#btn-backup').onclick = async () => {
+    const json = JSON.stringify({ homework: state.homework }, null, 2);
+    if (NATIVE && Plugins.Filesystem && Plugins.Share) {
+      // The Android WebView can't download files — save to cache and open the share sheet.
+      try {
+        const { uri } = await Plugins.Filesystem.writeFile({
+          path: `dz-backup-${todayYmd()}.json`, data: json, directory: 'CACHE', encoding: 'utf8',
+        });
+        await Plugins.Share.share({ title: 'Резервная копия ДЗ', files: [uri], dialogTitle: 'Сохранить копию ДЗ' });
+      } catch (err) {
+        if (!/cancel/i.test(String(err && err.message))) alert('Не удалось сохранить копию: ' + (err && err.message));
+      }
+      return;
+    }
+    const blob = new Blob([json], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `dz-backup-${todayYmd()}.json`;
@@ -591,7 +658,11 @@
     refreshIfNewDay();
   });
 
-  if ('serviceWorker' in navigator) {
+  if (LN) {
+    LN.addListener('localNotificationActionPerformed', () => { state.tab = 'homework'; render(); });
+    LN.checkPermissions().then((p) => { if (p.display === 'prompt' && state.homework.some((h) => h.remind)) ensureNotifyPermission(); }).catch(() => {});
+  }
+  if (!NATIVE && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
     navigator.serviceWorker.addEventListener('message', (e) => {
       if (e.data && e.data.type === 'open-homework') { state.tab = 'homework'; render(); }

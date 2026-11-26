@@ -1,0 +1,17 @@
+{
+  "name": "moe-dz-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Android-обёртка (APK) для приложения «Моё ДЗ» из папки docs",
+  "scripts": {
+    "prepare-web": "rm -rf www && cp -r ../docs www && rm -f www/sw.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/share": "^8.0.3"
+  }
+}

@@ -1,0 +1,80 @@
+name: Собрать APK
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - '!docs/schedule.ics'   # ежедневное обновление расписания не пересобирает APK
+      - 'apk/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apk
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apk/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Подготовить Android-проект
+        run: |
+          npm ci --no-audit --no-fund
+          npm run prepare-web
+          npx cap add android
+          # иконки, значок уведомлений и заставка
+          cp -r res/* android/app/src/main/res/
+          # точные напоминания по времени
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#&\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />#' \
+            android/app/src/main/AndroidManifest.xml
+          # номер версии = номер сборки (чтобы обновление ставилось поверх старой версии)
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" \
+            android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+          # постоянный ключ подписи: новая версия устанавливается поверх, ДЗ не теряются
+          mkdir -p ~/.android && cp debug.keystore ~/.android/debug.keystore
+
+      - name: Собрать APK
+        working-directory: apk/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../moe-dz.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moe-dz-apk
+          path: apk/moe-dz.apk
+
+      - name: Выложить APK для скачивания (Releases)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Приложение «Моё ДЗ» для Android. Версия 1.0.${{ github.run_number }}, собрано $(date -u '+%Y-%m-%d %H:%M') UTC.
+
+          Скачайте файл moe-dz.apk ниже и откройте его на телефоне."
+          if ! gh release view app >/dev/null 2>&1; then
+            gh release create app --target "${{ github.sha }}" --title "Моё ДЗ — APK" --notes "$NOTES" --latest
+          else
+            gh release edit app --notes "$NOTES"
+          fi
+          gh release upload app moe-dz.apk --clobber
