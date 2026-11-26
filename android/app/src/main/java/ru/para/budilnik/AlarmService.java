@@ -39,6 +39,8 @@ public class AlarmService extends Service {
     static volatile String ringingSeries;
     static volatile long ringingTime;
     static volatile String ringingLabel;
+    /** True while the alarm sound is actually playing (used by tests). */
+    static volatile boolean sounding;
 
     private MediaPlayer player;
     private Vibrator vibrator;
@@ -114,11 +116,12 @@ public class AlarmService extends Service {
             player.setLooping(true);
             player.prepare();
             player.start();
+            sounding = player.isPlaying();
         } catch (Exception e) {
             if (player != null) { player.release(); player = null; }
             try {
                 player = MediaPlayer.create(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                if (player != null) { player.setLooping(true); player.start(); }
+                if (player != null) { player.setLooping(true); player.start(); sounding = player.isPlaying(); }
             } catch (Exception ignored) { player = null; }
         }
     }
@@ -137,6 +140,7 @@ public class AlarmService extends Service {
 
     private void stopRinging() {
         handler.removeCallbacks(autoStop);
+        sounding = false;
         if (player != null) {
             try { player.stop(); } catch (RuntimeException ignored) { }
             player.release();

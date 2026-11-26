@@ -24,6 +24,7 @@ android {
         targetSdk 34
         versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int)
         versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     // A fixed key (from the BUDILNIK_KEYSTORE secret) lets every new APK install over
@@ -54,4 +55,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
 }

@@ -15,7 +15,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    name: Тесты (логика + эмулятор Android 14)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Тесты логики (расписание, подсказка, серии)
+        run: gradle -p android --no-daemon testDebugUnitTest
+
+      - name: Включить KVM для эмулятора
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Тесты на эмуляторе (будильник реально звонит)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb logcat -c || true
+            gradle -p android --no-daemon connectedDebugAndroidTest || (adb logcat -d -s BudilnikTest AndroidRuntime ActivityTaskManager > logcat.txt; adb pull /data/local/tmp/shots shots || true; exit 1)
+            adb logcat -d -s BudilnikTest > logcat.txt || true
+            adb pull /data/local/tmp/shots shots || true
+
+      - name: Сохранить скриншоты и отчёты
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            shots/
+            logcat.txt
+            android/app/build/reports/
+            android/app/build/outputs/androidTest-results/
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

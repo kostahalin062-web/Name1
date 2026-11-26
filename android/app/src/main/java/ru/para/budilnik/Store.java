@@ -23,9 +23,11 @@ final class Store {
     }
 
     // ---------- settings ----------
-    int roadMin() { return p.getInt("road", 60); }
-    int morningMin() { return p.getInt("morning", 30); }
-    int showerMin() { return p.getInt("shower", 60); }
+    static final int DEFAULT_ROAD = 60, DEFAULT_MORNING = 30, DEFAULT_SHOWER = 60;
+
+    int roadMin() { return p.getInt("road", DEFAULT_ROAD); }
+    int morningMin() { return p.getInt("morning", DEFAULT_MORNING); }
+    int showerMin() { return p.getInt("shower", DEFAULT_SHOWER); }
     boolean shower() { return p.getBoolean("showerOn", false); }
     int intervalMin() { return p.getInt("interval", 5); }
     /** How long before the "get up by" time the first alarm rings. */
@@ -43,7 +45,11 @@ final class Store {
     void setLastUpdate(long v) { p.edit().putLong("lastUpdate", v).apply(); }
 
     /** Minutes to subtract from the first lesson to get the "get up by" time. */
-    int prepMin() { return roadMin() + morningMin() + (shower() ? showerMin() : 0); }
+    int prepMin() { return prep(roadMin(), morningMin(), showerMin(), shower()); }
+
+    static int prep(int road, int morning, int showerMin, boolean showerOn) {
+        return road + morning + (showerOn ? showerMin : 0);
+    }
 
     // ---------- alarm series ----------
     static final class Series {
