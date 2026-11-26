@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#05060f">
+<title>До приезда Жени</title>
+<style>
+  /* ---------- fonts (local, работают без интернета) ---------- */
+  @font-face { font-family: 'Unbounded'; font-weight: 300; font-display: swap; src: url(fonts/unbounded-cyrillic-300-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: 'Unbounded'; font-weight: 300; font-display: swap; src: url(fonts/unbounded-latin-300-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: 'Unbounded'; font-weight: 600; font-display: swap; src: url(fonts/unbounded-cyrillic-600-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: 'Unbounded'; font-weight: 600; font-display: swap; src: url(fonts/unbounded-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: 'Unbounded'; font-weight: 800; font-display: swap; src: url(fonts/unbounded-cyrillic-800-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: 'Unbounded'; font-weight: 800; font-display: swap; src: url(fonts/unbounded-latin-800-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-weight: 400; font-display: swap; src: url(fonts/manrope-cyrillic-400-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: 'Manrope'; font-weight: 400; font-display: swap; src: url(fonts/manrope-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-weight: 600; font-display: swap; src: url(fonts/manrope-cyrillic-600-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: 'Manrope'; font-weight: 600; font-display: swap; src: url(fonts/manrope-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+
+  :root {
+    --glow: #7fffd4; --glow2: #b48cff;
+    --sb: env(safe-area-inset-bottom, 0px);
+    --groundH: calc(var(--sb) + 86px);   /* высота земли с полосой */
+    --base: calc(var(--sb) + 44px);      /* линия, на которой стоят ноги */
+    --pw: min(56vw, 300px);              /* ширина самолёта */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: #05060f; color: #eef; font-family: 'Manrope', system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  #sky { z-index: 0; }
+  #fx { z-index: 5; }
+
+  /* ---------- timer ---------- */
+  .wrap {
+    position: relative; z-index: 2; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: calc(env(safe-area-inset-top) + 56px) 16px calc(var(--groundH) + 70px);
+    text-align: center;
+  }
+  .title {
+    font-family: 'Unbounded', sans-serif; font-weight: 300; letter-spacing: .25em;
+    text-transform: uppercase; font-size: clamp(12px, 3.2vw, 16px); opacity: .8; margin-bottom: 18px;
+    text-shadow: 0 0 18px rgba(127,255,212,.35);
+  }
+  .days {
+    font-family: 'Unbounded', sans-serif; font-weight: 800; line-height: .95;
+    font-size: clamp(88px, 32vw, 230px);
+    background: linear-gradient(180deg, #ffffff 0%, #c9fff0 30%, var(--glow) 60%, var(--glow2) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 22px rgba(127,255,212,.45)) drop-shadow(0 0 6px rgba(180,140,255,.4));
+    font-variant-numeric: tabular-nums; display: inline-block;
+  }
+  .days-label { font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: clamp(16px, 4.5vw, 22px); margin: 6px 0 24px; letter-spacing: .08em; }
+  .row { display: flex; gap: clamp(8px, 3vw, 18px); justify-content: center; }
+  .cell {
+    position: relative; min-width: clamp(76px, 23vw, 112px); padding: 14px 8px 10px; border-radius: 18px;
+    background: linear-gradient(180deg, rgba(30,38,72,.72), rgba(14,18,40,.72));
+    border: 1px solid rgba(127,255,212,.18);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35), 0 0 18px rgba(127,255,212,.08);
+    overflow: hidden;
+  }
+  .cell::before { /* блик на стекле */
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,.08), transparent); pointer-events: none;
+  }
+  .cell .n {
+    font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: clamp(28px, 9vw, 48px);
+    font-variant-numeric: tabular-nums; display: inline-block; color: #f3fffb;
+    text-shadow: 0 0 10px rgba(127,255,212,.55), 0 0 22px rgba(127,255,212,.25);
+  }
+  .cell .l { font-size: 12px; opacity: .6; margin-top: 4px; text-transform: lowercase; }
+  .target { margin-top: 22px; font-size: 13px; opacity: .55; }
+  .done { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: clamp(34px, 10vw, 72px); line-height: 1.15;
+    background: linear-gradient(90deg, var(--glow), var(--glow2)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 18px rgba(127,255,212,.45)); animation: doneIn .9s cubic-bezier(.2,1.4,.4,1) both; }
+  .done .emoji { display: block; font-size: .9em; color: initial; -webkit-text-fill-color: initial; filter: none; }
+  @keyframes doneIn { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* ---------- scene ---------- */
+  .scene { position: fixed; z-index: 3; left: 0; right: 0; bottom: 0; height: calc(var(--groundH) + 140px); pointer-events: none; }
+  .ground { position: absolute; left: 0; right: 0; bottom: 0; height: var(--groundH);
+    background:
+      linear-gradient(180deg, #c9d4f2 0, #8e9bc4 6px, #3a4468 12px, transparent 12px),
+      linear-gradient(180deg, #232a45 12px, #1a2038 60%, #141a30 100%); }
+  .runway { position: absolute; left: 0; right: 0; top: 16px; height: 54px;
+    background: linear-gradient(180deg, #2b3250, #222842 50%, #1d2239); border-top: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.06); }
+  .runway::before { /* осевая разметка */
+    content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.6) 0 26px, transparent 26px 52px); opacity: .75; }
+  .edge { position: absolute; left: 0; right: 0; height: 6px;
+    background: radial-gradient(circle at 50% 50%, #fff6d8 0 1.6px, rgba(255,214,140,.55) 2.2px, transparent 3.6px) 0 0 / 30px 6px repeat-x; }
+  .edge.top { top: -3px; } .edge.bot { bottom: -3px; background-image: radial-gradient(circle at 50% 50%, #e6f2ff 0 1.6px, rgba(110,170,255,.55) 2.2px, transparent 3.6px); }
+  .rabbit { /* бегущий огонёк вдоль полосы — к самолёту */
+    position: absolute; top: -6px; left: 0; width: 12px; height: 12px; border-radius: 50%;
+    background: radial-gradient(circle, #fff 0 2px, rgba(255,240,200,.7) 3px, transparent 6px);
+    animation: rabbit 2.6s linear infinite; will-change: transform; }
+  @keyframes rabbit { from { transform: translateX(-20px); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { transform: translateX(100vw); opacity: 0; } }
+  .sign { position: absolute; left: 0; right: 0; bottom: calc(var(--sb) + 2px); text-align: center;
+    font-size: 12px; letter-spacing: .04em; color: #d8def5; opacity: .8; }
+  .sign b { font-weight: 600; color: var(--glow); }
+
+  .actor { position: absolute; }
+  #plane { right: 6px; bottom: calc(var(--base) - 1px); width: var(--pw); aspect-ratio: 340 / 140;
+    transform-origin: 70.6% 98.6%; will-change: transform; }
+  #plane svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .pshadow { position: absolute; right: 6px; width: var(--pw); height: 16px; bottom: calc(var(--base) - 8px);
+    background: radial-gradient(38% 50% at 56% 50%, rgba(0,0,0,.55), rgba(0,0,0,0)); will-change: transform, opacity; }
+
+  #soldier { width: 42px; height: 70px; bottom: var(--base); left: 12px; pointer-events: auto; cursor: pointer;
+    transform-origin: 50% 100%; }
+  #soldier.ready { transition: left 1s linear; }
+  #soldier::after { content: ''; position: absolute; inset: -14px -16px -6px; } /* большая зона для тапа */
+  #soldier svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .sshadow { position: absolute; left: 3px; right: 3px; bottom: -3px; height: 6px; border-radius: 50%; background: rgba(0,0,0,.45); filter: blur(1.5px); }
+
+  /* ходьба: бедро/голень и плечо/предплечье на шарнирах */
+  #soldier .thigh, #soldier .shin, #soldier .uarm, #soldier .farm { transform-box: view-box; }
+  #soldier .thigh { transform-origin: 24px 47px; animation: thigh .9s linear infinite; }
+  #soldier .shin  { transform-origin: 24px 60px; animation: shin .9s linear infinite; }
+  #soldier .f, #soldier .f .shin, #soldier .f .farm { animation-delay: -.45s; }
+  #soldier .uarm { transform-origin: 25px 28.5px; animation: uarm .9s ease-in-out infinite; }
+  #soldier .farm { transform-origin: 25px 38px; animation: farm .9s ease-in-out infinite; }
+  #soldier .bodyg { animation: bob .45s ease-in-out infinite alternate; }
+  @keyframes thigh { 0% { transform: rotate(-24deg); } 15% { transform: rotate(-14deg); } 30% { transform: rotate(0deg); } 45% { transform: rotate(16deg); }
+                     55% { transform: rotate(22deg); } 70% { transform: rotate(6deg); } 85% { transform: rotate(-18deg); } 100% { transform: rotate(-24deg); } }
+  @keyframes shin  { 0% { transform: rotate(2deg); } 30% { transform: rotate(4deg); } 50% { transform: rotate(14deg); } 62% { transform: rotate(48deg); }
+                     75% { transform: rotate(50deg); } 90% { transform: rotate(10deg); } 100% { transform: rotate(2deg); } }
+  @keyframes uarm  { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(-26deg); } }
+  @keyframes farm  { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(-40deg); } }
+  @keyframes bob   { from { transform: translateY(0); } to { transform: translateY(-1.4px); } }
+
+  /* отдать честь */
+  #soldier.salute .thigh, #soldier.salute .shin, #soldier.salute .uarm, #soldier.salute .farm, #soldier.salute .bodyg { animation: none; }
+  #soldier .sarm { display: none; }
+  #soldier.salute .sarm { display: inline; }
+  #soldier.salute .uarm.n { visibility: hidden; }
+  #soldier.salute .uarm.f { transform: rotate(4deg); }
+  #soldier.salute .farm.f { transform: rotate(-4deg); }
+  .bubble { position: absolute; left: 50%; bottom: 100%; margin-bottom: 8px; transform: translateX(-30%) scale(.6); transform-origin: 20% 100%;
+    white-space: nowrap; font-size: 11px; font-weight: 600; color: #0b1020; background: #f4fff9; padding: 4px 9px; border-radius: 10px;
+    opacity: 0; transition: opacity .2s, transform .25s cubic-bezier(.2,1.6,.4,1); box-shadow: 0 0 14px rgba(127,255,212,.5); }
+  .bubble::after { content: ''; position: absolute; left: 22%; top: 100%; border: 5px solid transparent; border-top-color: #f4fff9; }
+  #soldier.salute .bubble { opacity: 1; transform: translateX(-30%) scale(1); }
+
+  .pct { position: absolute; bottom: calc(var(--base) + 80px); left: 12px; transform: translateX(-50%);
+    font-size: 11px; font-weight: 600; white-space: nowrap; padding: 3px 9px; border-radius: 10px;
+    background: rgba(10,30,34,.75); border: 1px solid rgba(127,255,212,.45); color: #dffff4;
+    box-shadow: 0 0 12px rgba(127,255,212,.25); }
+  .pct.ready { transition: left 1s linear, opacity .5s; }
+  .gone { opacity: 0 !important; transition: opacity .6s !important; }
+
+  /* огни самолёта */
+  .blink { animation: blink 1.3s steps(1, end) infinite; }
+  .blink.slow { animation-duration: 1.9s; animation-delay: -.6s; }
+  @keyframes blink { 0% { opacity: 1; } 14% { opacity: .08; } 100% { opacity: .08; } }
+  .strobe { animation: strobe 1.6s steps(1, end) infinite; }
+  @keyframes strobe { 0% { opacity: 1; } 5% { opacity: 0; } 10% { opacity: 1; } 15% { opacity: 0; } 100% { opacity: 0; } }
+  #doorPanel { opacity: 0; transition: opacity .5s; }
+  #plane.closed #doorPanel { opacity: 1; }
+  #stairs { transition: transform 1.2s ease-in, opacity 1.2s; transform-box: view-box; }
+  #plane.closed #stairs { transform: translateX(-46px); opacity: 0; }
+
+  /* ---------- settings ---------- */
+  .gear {
+    position: fixed; z-index: 6; right: 16px; top: calc(env(safe-area-inset-top) + 16px);
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.06); color: #eef; font-size: 20px; cursor: pointer; opacity: .55;
+  }
+  .gear:hover { opacity: 1; }
+  .panel {
+    position: fixed; z-index: 7; inset: 0; display: none; align-items: flex-end; justify-content: center;
+    background: rgba(0,0,0,.55);
+  }
+  .panel.open { display: flex; }
+  .sheet {
+    width: 100%; max-width: 440px; background: #12142a; border-radius: 22px 22px 0 0;
+    padding: 22px 20px calc(var(--sb) + 22px); border: 1px solid rgba(255,255,255,.1);
+    -webkit-user-select: text; user-select: text;
+  }
+  .sheet h3 { font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 16px; margin-bottom: 16px; }
+  .sheet label { display: block; font-size: 13px; opacity: .7; margin: 12px 0 6px; }
+  .sheet input {
+    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.06); color: #fff; font: inherit; font-size: 16px; color-scheme: dark;
+  }
+  .btns { display: flex; gap: 10px; margin-top: 18px; }
+  .btns button, .demo { flex: 1; padding: 12px; border-radius: 12px; border: 0; font: inherit; font-weight: 600; cursor: pointer; }
+  .save { background: linear-gradient(90deg, var(--glow), var(--glow2)); color: #05060f; }
+  .cancel { background: rgba(255,255,255,.08); color: #eef; }
+  .demo { width: 100%; margin-top: 10px; background: transparent; color: var(--glow); border: 1px dashed rgba(127,255,212,.4); }
+
+  @media (max-height: 640px) {
+    .wrap { padding-top: calc(env(safe-area-inset-top) + 40px); }
+    .days { font-size: clamp(72px, 26vw, 200px); }
+    .days-label { margin-bottom: 14px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div class="wrap">
+  <div class="title" id="title">До приезда Жени</div>
+  <div id="counter">
+    <div class="days" id="d">0</div>
+    <div class="days-label" id="dl">дней</div>
+    <div class="row">
+      <div class="cell"><div class="n" id="h">00</div><div class="l" id="hl">часов</div></div>
+      <div class="cell"><div class="n" id="m">00</div><div class="l" id="ml">минут</div></div>
+      <div class="cell"><div class="n" id="s">00</div><div class="l" id="sl">секунд</div></div>
+    </div>
+  </div>
+  <div class="done" id="done" hidden>Женя дома! <span class="emoji">🎉</span></div>
+  <div class="target" id="target"></div>
+</div>
+
+<div class="scene" id="scene">
+  <div class="ground" id="ground">
+    <div class="runway"><div class="edge top"><div class="rabbit"></div></div><div class="edge bot"></div></div>
+    <div class="sign">Жду с цветами — <b>Костя</b> 💐</div>
+  </div>
+
+  <div class="pshadow" id="pshadow"></div>
+
+  <!-- САМОЛЁТ: нос влево. viewBox 340×140, земля на y=138. Самолёт сдвинут на 40 вправо, слева трап -->
+  <div class="actor" id="plane">
+  <svg viewBox="0 0 340 140" aria-hidden="true">
+    <defs>
+      <linearGradient id="fus" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#eef1f8"/>
+        <stop offset=".75" stop-color="#c9d0e2"/><stop offset="1" stop-color="#9aa4c0"/>
+      </linearGradient>
+      <linearGradient id="fin" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#c9a8ff"/><stop offset="1" stop-color="#6a49d8"/>
+      </linearGradient>
+      <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#7fffd4"/><stop offset="1" stop-color="#b48cff"/>
+      </linearGradient>
+      <linearGradient id="wing" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f1f4fb"/><stop offset="1" stop-color="#aab3cb"/>
+      </linearGradient>
+      <linearGradient id="eng" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f4f6fb"/><stop offset=".6" stop-color="#c3cadc"/><stop offset="1" stop-color="#8790aa"/>
+      </linearGradient>
+      <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#4b5f9a"/><stop offset="1" stop-color="#151c38"/>
+      </linearGradient>
+      <radialGradient id="gR"><stop offset="0" stop-color="#ff5a5a"/><stop offset=".35" stop-color="rgba(255,60,60,.55)"/><stop offset="1" stop-color="rgba(255,0,0,0)"/></radialGradient>
+      <radialGradient id="gG"><stop offset="0" stop-color="#6bff9c"/><stop offset=".35" stop-color="rgba(80,255,140,.5)"/><stop offset="1" stop-color="rgba(0,255,100,0)"/></radialGradient>
+      <radialGradient id="gW"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="rgba(255,255,255,.6)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></radialGradient>
+      <radialGradient id="gWarm"><stop offset="0" stop-color="#fff3d0"/><stop offset="1" stop-color="#ffb85c"/></radialGradient>
+    </defs>
+
+    <!-- трап -->
+    <g id="stairs">
+      <rect x="77" y="88" width="3.5" height="46" fill="#7f88a3"/>
+      <line x1="16" y1="140" x2="74" y2="90" stroke="#8a93ad" stroke-width="3.2" stroke-linecap="round"/>
+      <g fill="#e3e8f3">
+        <rect x="21" y="131" width="8" height="2"/><rect x="27.3" y="124.8" width="8" height="2"/><rect x="33.5" y="118.5" width="8" height="2"/>
+        <rect x="39.8" y="112.3" width="8" height="2"/><rect x="46" y="106" width="8" height="2"/><rect x="52.3" y="99.8" width="8" height="2"/>
+        <rect x="58.5" y="93.5" width="8" height="2"/>
+      </g>
+      <rect x="64" y="86.6" width="22" height="3" rx="1" fill="#e3e8f3"/>
+      <g stroke="#f2c14e" stroke-width="1.6" fill="none" stroke-linecap="round">
+        <path d="M22 116 L70 66 L84 66"/>
+        <path d="M22 138 V116 M38 121 V100 M54 105 V83 M70 89 V66 M84 88 V66"/>
+      </g>
+      <circle cx="22" cy="136" r="3" fill="#2b2f3f"/><circle cx="79" cy="136" r="3" fill="#2b2f3f"/>
+    </g>
+
+    <g transform="translate(40 0)">
+      <!-- хвостовое оперение -->
+      <path d="M234 44 L270 5 Q273 2 277 2 L294 2 Q297 2 296 6 L284 46 Z" fill="url(#fin)"/>
+      <path d="M262 9 L290 9" stroke="#fff" stroke-opacity=".25" stroke-width="1.5"/>
+      <path d="M278 16 l3 -5 l3 5 l-6 -3 h6 z" fill="#fff" opacity=".85"/>
+      <!-- фюзеляж -->
+      <path d="M6 76 C4 60 18 44 48 42 L236 42 C256 42 268 34 282 24 L298 22 L296 50 C292 70 270 92 240 92 L42 92 C20 92 8 88 6 76 Z" fill="url(#fus)"/>
+      <path d="M262 52 L302 44 L306 49 L272 60 Z" fill="#cdd4e6"/>
+      <!-- блик -->
+      <path d="M40 46 C80 44 180 44 236 44.5 C250 44 246 47.5 236 48 C180 48.5 90 49 44 50 C34 50 33 47 40 46 Z" fill="#fff" opacity=".75"/>
+      <!-- полоса -->
+      <path d="M30 74 L250 74 C262 74 270 70 278 64 L282 66 C274 74 264 80 250 80 L26 80 Z" fill="url(#stripe)" opacity=".95"/>
+      <text x="66" y="88.5" font-family="Unbounded, sans-serif" font-weight="600" font-size="7" letter-spacing="1.6" fill="#6b78a3">ДО ОТПУСКА</text>
+      <!-- кабина пилотов -->
+      <path d="M13 60 C18 53 27 50 35 50 L37 58 L15 62 Z" fill="url(#glass)"/>
+      <path d="M17 57 C21 54 26 52 31 52" stroke="#bcd3ff" stroke-width="1" fill="none" opacity=".7"/>
+      <!-- иллюминаторы (свет в салоне) -->
+      <g fill="url(#gWarm)">
+        <rect x="72" y="54" width="6.5" height="9" rx="3.2"/><rect x="85" y="54" width="6.5" height="9" rx="3.2"/><rect x="98" y="54" width="6.5" height="9" rx="3.2"/>
+        <rect x="111" y="54" width="6.5" height="9" rx="3.2"/><rect x="124" y="54" width="6.5" height="9" rx="3.2"/><rect x="137" y="54" width="6.5" height="9" rx="3.2"/>
+        <rect x="150" y="54" width="6.5" height="9" rx="3.2"/><rect x="163" y="54" width="6.5" height="9" rx="3.2"/><rect x="176" y="54" width="6.5" height="9" rx="3.2"/>
+        <rect x="189" y="54" width="6.5" height="9" rx="3.2"/><rect x="202" y="54" width="6.5" height="9" rx="3.2"/><rect x="215" y="54" width="6.5" height="9" rx="3.2"/>
+      </g>
+      <!-- дверь -->
+      <rect x="44" y="48" width="17" height="40" rx="4" fill="#ffd08a"/>
+      <rect x="46" y="50" width="13" height="38" rx="3" fill="url(#gWarm)" opacity=".85"/>
+      <rect id="doorPanel" x="44" y="48" width="17" height="40" rx="4" fill="#e9edf6" stroke="#9aa4bf" stroke-width=".8"/>
+      <rect x="43.5" y="47.5" width="18" height="41" rx="4.5" fill="none" stroke="#8a94b2" stroke-width="1"/>
+      <!-- крыло, двигатель -->
+      <path d="M118 84 L184 82 L236 118 Q238 122 233 122 L222 122 Z" fill="url(#wing)"/>
+      <path d="M232 121 L240 110 L243 111 L236 122 Z" fill="#b48cff"/>
+      <path d="M150 86 L160 86 L166 95 L156 95 Z" fill="#a7b0c8"/>
+      <path d="M140 93 H186 Q196 93 196 102 Q196 111 186 111 H140 Q133 111 133 102 Q133 93 140 93 Z" fill="url(#eng)"/>
+      <ellipse cx="136" cy="102" rx="4" ry="8" fill="#20263d"/>
+      <ellipse cx="136.5" cy="102" rx="1.6" ry="4" fill="#59607a"/>
+      <path d="M142 95.5 H186" stroke="#fff" stroke-opacity=".8" stroke-width="1.2"/>
+      <!-- шасси -->
+      <g stroke="#6d7590" stroke-width="3" stroke-linecap="round"><line x1="60" y1="91" x2="60" y2="127"/><line x1="202" y1="94" x2="202" y2="127"/></g>
+      <circle cx="60" cy="131" r="7" fill="#1e2232"/><circle cx="60" cy="131" r="2.6" fill="#8a91a8"/>
+      <circle cx="196" cy="131" r="7" fill="#1e2232"/><circle cx="196" cy="131" r="2.6" fill="#8a91a8"/>
+      <circle cx="209" cy="131" r="7" fill="#1e2232"/><circle cx="209" cy="131" r="2.6" fill="#8a91a8"/>
+      <!-- огни -->
+      <circle class="blink" cx="150" cy="40.5" r="9" fill="url(#gR)"/><circle class="blink" cx="150" cy="40.5" r="2" fill="#ff7070"/>
+      <circle class="blink slow" cx="160" cy="93.5" r="8" fill="url(#gR)"/>
+      <circle class="strobe" cx="236" cy="120" r="12" fill="url(#gW)"/>
+      <circle class="blink" cx="236" cy="120" r="9" fill="url(#gR)"/><circle cx="236" cy="120" r="1.8" fill="#ff6a6a"/>
+      <circle class="blink slow" cx="186" cy="83" r="7" fill="url(#gG)"/>
+      <circle class="strobe" cx="300" cy="23" r="10" fill="url(#gW)"/>
+      <circle id="exh" cx="199" cy="102" r=".5" fill="none"/>
+      <circle id="mg" cx="202" cy="137" r=".5" fill="none"/>
+    </g>
+  </svg>
+  </div>
+
+  <div class="pct" id="pct">пройдено 0%</div>
+
+  <!-- СОЛДАТ: лицом вправо. viewBox 48×80, земля y=80 -->
+  <div class="actor" id="soldier" role="button" aria-label="Солдатик">
+    <div class="sshadow"></div>
+    <div class="bubble">Здравия желаю!</div>
+    <svg viewBox="0 0 48 80" aria-hidden="true">
+      <defs>
+        <pattern id="camo" width="6" height="6" patternUnits="userSpaceOnUse">
+          <rect width="6" height="6" fill="#737c50"/>
+          <rect x="0" y="0" width="2" height="1" fill="#4e5734"/><rect x="3" y="1" width="2" height="2" fill="#3b4229"/>
+          <rect x="1" y="3" width="1" height="2" fill="#959a6c"/><rect x="4" y="4" width="2" height="1" fill="#4e5734"/>
+          <rect x="2" y="5" width="1" height="1" fill="#3b4229"/><rect x="5" y="2" width="1" height="1" fill="#959a6c"/>
+          <rect x="0" y="4" width="1" height="1" fill="#5c4a32"/><rect x="3" y="3" width="1" height="1" fill="#5c4a32"/>
+        </pattern>
+        <pattern id="camoD" width="6" height="6" patternUnits="userSpaceOnUse">
+          <rect width="6" height="6" fill="#596240"/>
+          <rect x="0" y="0" width="2" height="1" fill="#3d4429"/><rect x="3" y="1" width="2" height="2" fill="#2c3220"/>
+          <rect x="1" y="3" width="1" height="2" fill="#727853"/><rect x="4" y="4" width="2" height="1" fill="#3d4429"/>
+          <rect x="5" y="2" width="1" height="1" fill="#727853"/><rect x="3" y="3" width="1" height="1" fill="#4a3b28"/>
+        </pattern>
+        <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#000" stop-opacity=".32"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/>
+        </linearGradient>
+        <linearGradient id="bag" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#5f5a38"/><stop offset="1" stop-color="#857e52"/>
+        </linearGradient>
+      </defs>
+      <g class="bodyg">
+        <!-- дальняя рука -->
+        <g class="uarm f">
+          <rect x="22.4" y="26.5" width="5.4" height="13" rx="2.7" fill="url(#camoD)"/>
+          <g class="farm f">
+            <rect x="22.6" y="36.5" width="5" height="10.5" rx="2.5" fill="url(#camoD)"/>
+            <circle cx="25.2" cy="47.6" r="2.3" fill="#d9a882"/>
+          </g>
+        </g>
+        <!-- дальняя нога -->
+        <g class="thigh f">
+          <rect x="20.5" y="45" width="7" height="16.5" rx="3.2" fill="url(#camoD)"/>
+          <g class="shin f">
+            <rect x="21" y="59" width="6" height="14.5" rx="3" fill="url(#camoD)"/>
+            <path d="M20.6 71 H27.4 V74.4 Q32.6 74.8 33.6 77.2 V79.2 H20.6 Z" fill="#141416"/>
+            <rect x="20.6" y="79" width="13" height="1" fill="#3a3a3a"/>
+          </g>
+        </g>
+        <!-- ближняя нога -->
+        <g class="thigh n">
+          <rect x="20.5" y="45" width="7" height="16.5" rx="3.2" fill="url(#camo)"/>
+          <g class="shin n">
+            <rect x="21" y="59" width="6" height="14.5" rx="3" fill="url(#camo)"/>
+            <path d="M20.6 71 H27.4 V74.4 Q32.6 74.8 33.6 77.2 V79.2 H20.6 Z" fill="#1c1c1f"/>
+            <path d="M22 72.5 H26.5 M22 74.3 H27.5" stroke="#555" stroke-width=".5"/>
+            <rect x="20.6" y="79" width="13" height="1" fill="#444"/>
+          </g>
+        </g>
+        <!-- вещмешок -->
+        <path d="M12.5 29 Q11 27.5 13 26.4 L18.6 25.6 Q20.6 33 19.8 41 Q19.2 47 14.6 47 Q9.6 47 9.4 41 Q9.2 34 12.5 29 Z" fill="url(#bag)"/>
+        <path d="M12.8 29.5 Q15.6 28.6 18.8 28.8" stroke="#3e3a24" stroke-width="1.3" fill="none"/>
+        <path d="M11 39 Q14 40.5 19 39.6" stroke="#3e3a24" stroke-width=".6" fill="none" opacity=".6"/>
+        <!-- китель -->
+        <path d="M17.5 30 Q17.5 25 23 25 H27 Q33 25 33 31 L34 47.5 Q34 50.5 31 50.5 H19.5 Q16.5 50.5 16.6 47.5 Z" fill="url(#camo)"/>
+        <path d="M17.5 30 Q17.5 25 23 25 H27 Q33 25 33 31 L34 47.5 Q34 50.5 31 50.5 H19.5 Q16.5 50.5 16.6 47.5 Z" fill="url(#shade)"/>
+        <rect x="27.3" y="33" width="5" height="5" rx="1" fill="none" stroke="#3b4229" stroke-width=".6"/>
+        <rect x="16.6" y="45" width="17.4" height="3" fill="#2d2416"/>
+        <rect x="29.8" y="44.6" width="3.2" height="3.8" rx=".5" fill="#c9a646"/>
+        <!-- лямка вещмешка -->
+        <path d="M19.4 26 Q25.5 27 26.6 31.5 Q27 35 24.5 39" stroke="#4f4a2e" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <!-- ближняя рука -->
+        <g class="uarm n">
+          <rect x="22.4" y="26.5" width="5.4" height="13" rx="2.7" fill="url(#camo)"/>
+          <rect x="23.2" y="29.5" width="3.8" height="1.1" fill="#f4f4f4"/><rect x="23.2" y="30.6" width="3.8" height="1.1" fill="#1c57c9"/><rect x="23.2" y="31.7" width="3.8" height="1.1" fill="#d52b1e"/>
+          <g class="farm n">
+            <rect x="22.6" y="36.5" width="5" height="10.5" rx="2.5" fill="url(#camo)"/>
+            <circle cx="25.2" cy="47.6" r="2.4" fill="#efbf98"/>
+          </g>
+        </g>
+        <!-- голова -->
+        <rect x="23.5" y="20.5" width="5" height="6" rx="1.5" fill="#dcab86"/>
+        <path d="M20.5 24.6 Q25.5 27.4 31 24.4 L31.4 26.4 Q25.5 28.6 20.2 26.6 Z" fill="#4e5734"/>
+        <ellipse cx="26.3" cy="16.2" rx="6.4" ry="6.9" fill="#f2c6a0"/>
+        <path d="M20 14.5 Q20.6 20.5 23.6 22 Q20 21.6 19.8 17 Z" fill="#5a3b25"/>
+        <ellipse cx="23.6" cy="16.8" rx="1.4" ry="2" fill="#e3ae88"/>
+        <path d="M28.4 13.3 L31 13.1" stroke="#5a3b25" stroke-width=".8" stroke-linecap="round"/>
+        <circle cx="29.8" cy="15.4" r=".95" fill="#222"/>
+        <path d="M32.4 15.6 Q34 17.4 32.4 18.4" stroke="#d99a77" stroke-width=".8" fill="none" stroke-linecap="round"/>
+        <path d="M29.2 20.3 Q30.6 21 31.6 20.2" stroke="#9b5a45" stroke-width=".7" fill="none" stroke-linecap="round"/>
+        <circle cx="29" cy="18.4" r="1.3" fill="#f29a88" opacity=".45"/>
+        <!-- пилотка со звёздочкой -->
+        <path d="M19.4 13.4 L20.2 8.6 Q26.2 6.4 31.8 8.1 L33.6 12.6 Q26.3 11.3 19.4 13.4 Z" fill="#5f6b3a"/>
+        <path d="M20.1 11.8 Q26.4 10 33 11.3" stroke="#46502a" stroke-width=".8" fill="none"/>
+        <path d="M20.2 8.6 Q26.2 6.4 31.8 8.1" stroke="#78854b" stroke-width=".6" fill="none"/>
+        <circle cx="30.6" cy="10.3" r="1.5" fill="#d4af37"/>
+        <path d="M30.6 9.2 L30.95 10.05 L31.85 10.1 L31.15 10.65 L31.4 11.5 L30.6 11 L29.8 11.5 L30.05 10.65 L29.35 10.1 L30.25 10.05 Z" fill="#c8261c"/>
+        <!-- рука при отдании чести (поверх головы) -->
+        <g class="sarm">
+          <path d="M25.6 29.4 L34 23.2" stroke="url(#camo)" stroke-width="5.4" stroke-linecap="round"/>
+          <path d="M34 23.2 L33 14.4" stroke="url(#camo)" stroke-width="4.8" stroke-linecap="round"/>
+          <path d="M31 10.6 Q34.6 10.4 35 12.6 Q34.4 14.6 32.4 14.6 Q30.8 14 31 10.6 Z" fill="#efbf98"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<canvas id="fx"></canvas>
+
+<button class="gear" id="gear" aria-label="Настройки">⚙︎</button>
+
+<div class="panel" id="panel">
+  <div class="sheet">
+    <h3>Настройки</h3>
+    <label for="name">Заголовок</label>
+    <input id="name" type="text" maxlength="40">
+    <label for="when">Дата и время приезда</label>
+    <input id="when" type="datetime-local" step="1">
+    <label for="from">Начало пути солдатика</label>
+    <input id="from" type="datetime-local" step="1">
+    <div class="btns">
+      <button class="cancel" id="cancel">Отмена</button>
+      <button class="save" id="save">Сохранить</button>
+    </div>
+    <button class="demo" id="demo">▶ Посмотреть, как улетит самолёт</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const DEFAULT_TARGET = '2026-12-27T00:00:00';
+  const DEFAULT_TITLE = 'До приезда Жени';
+  const DEFAULT_START = '2026-11-27T00:00:00';
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  let targetStr = store.get('cd_target') || DEFAULT_TARGET;
+  let titleStr = store.get('cd_title') || DEFAULT_TITLE;
+  let startStr = store.get('cd_start') || DEFAULT_START;
+
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const smooth = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+  function plural(n, one, few, many) {
+    const a = n % 10, b = n % 100;
+    if (a === 1 && b !== 11) return one;
+    if (a >= 2 && a <= 4 && (b < 10 || b >= 20)) return few;
+    return many;
+  }
+
+  const soldier = $('soldier'), planeEl = $('plane'), pctEl = $('pct'), shadowEl = $('pshadow'), scene = $('scene');
+
+  /* ---------- геометрия сцены ---------- */
+  const VBW = 340, STAIR_FOOT = 22, STAIR_TOP = 72, DOOR_X = 92, SILL = 50, DOOR_H = 40;
+  const SOLDIER_W = 42, SOLDIER_H = 70, FEET = 21;
+  function geom() {
+    const sr = scene.getBoundingClientRect(), pr = planeEl.getBoundingClientRect();
+    const k = pr.width / VBW;
+    return { k, foot: pr.left - sr.left + STAIR_FOOT * k };
+  }
+
+  let lastProgress = 0;
+  function placeSoldier(progress) {
+    lastProgress = progress;
+    const g = geom();
+    const startX = 12, endX = g.foot - FEET - 1;
+    const x = startX + (endX - startX) * progress;
+    soldier.style.left = x + 'px';
+    pctEl.style.left = (x + SOLDIER_W / 2) + 'px';
+    pctEl.textContent = 'пройдено ' + Math.floor(progress * 100) + '%';
+  }
+
+  /* ---------- отдать честь по тапу ---------- */
+  let saluteTimer;
+  soldier.addEventListener('click', () => {
+    if (phase !== 'walk') return;
+    soldier.classList.add('salute');
+    clearTimeout(saluteTimer);
+    saluteTimer = setTimeout(() => soldier.classList.remove('salute'), 1800);
+    if (navigator.vibrate) try { navigator.vibrate(30); } catch (e) {}
+  });
+
+  /* ---------- посадка и взлёт ---------- */
+  let phase = 'walk', runId = 0, demo = false, flight = null;
+
+  async function launch() {
+    if (phase !== 'walk') return;
+    phase = 'board';
+    const my = ++runId;
+    soldier.classList.remove('salute');
+    placeSoldier(1);
+    await wait(1100); if (my !== runId) return;
+    pctEl.classList.add('gone');
+    // подъём по трапу: сначала по ступеням, потом по площадке к двери
+    const k = geom().k;
+    const s = (DOOR_H * k * 1.05) / SOLDIER_H;
+    const up = soldier.animate([
+      { transform: 'translate(0,0) scale(1)' },
+      { transform: `translate(${(STAIR_TOP - STAIR_FOOT) * k}px, ${-SILL * k}px) scale(${(1 + s) / 2 * 0.92})`, offset: .72 },
+      { transform: `translate(${(DOOR_X - STAIR_FOOT) * k}px, ${-SILL * k}px) scale(${s})` }
+    ], { duration: 2600, easing: 'linear', fill: 'forwards' });
+    await up.finished.catch(() => {}); if (my !== runId) return;
+    soldier.classList.add('gone');
+    await wait(700); if (my !== runId) return;
+    planeEl.classList.add('closed');           // дверь закрывается, трап отъезжает
+    await wait(1500); if (my !== runId) return;
+    phase = 'flight';
+    startFlight(my);
+  }
+
+  function startFlight(my) {
+    const r = planeEl.getBoundingClientRect();
+    const vw = innerWidth, vh = innerHeight;
+    const g0 = { x: r.left + r.width * 0.706, y: r.top + r.height * 0.986 };
+    const SPOOL = 0.8, T1 = 3.8, D = 8.5;            // раскрутка, разбег, набор высоты (сек)
+    const roll = vw * 0.34, A = 2 * roll / (T1 * T1), v1 = A * T1;
+    const L = { x: g0.x - roll, y: g0.y };
+    const C = { x: L.x - v1 * D / 4, y: L.y - vh * 0.05 };    // скорость в точке отрыва совпадает с разбегом
+    const E = { x: -vw * 0.08, y: vh * 0.26 };
+    flight = { my, t0: performance.now(), g0, SPOOL, T1, D, A, L, C, E, done: false };
+  }
+
+  function stepFlight(now) {
+    const f = flight; if (!f || f.done) return;
+    const t = (now - f.t0) / 1000 - f.SPOOL;
+    let x = 0, y = 0, rot = 0, sc = 1, op = 1;
+    if (t > 0 && t < f.T1) {
+      x = -f.A * t * t / 2;
+      rot = 9 * smooth((t - (f.T1 - 0.6)) / 0.9);
+      if (t > 1 && Math.random() < .7) puff(f.g0.x + x - 4, f.g0.y - 3, 'dust');
+    } else if (t >= f.T1) {
+      const tau = clamp((t - f.T1) / f.D, 0, 1), u = 1 - (1 - tau) * (1 - tau), iu = 1 - u;
+      const px = iu * iu * f.L.x + 2 * u * iu * f.C.x + u * u * f.E.x;
+      const py = iu * iu * f.L.y + 2 * u * iu * f.C.y + u * u * f.E.y;
+      x = px - f.g0.x; y = py - f.g0.y;
+      // нос смотрит по траектории (самолёт летит носом влево)
+      const dx = 2 * iu * (f.C.x - f.L.x) + 2 * u * (f.E.x - f.C.x), dy = 2 * iu * (f.C.y - f.L.y) + 2 * u * (f.E.y - f.C.y);
+      const ang = clamp(Math.atan2(-dy, -dx) * 57.3, 0, 26);
+      const ramp = 9 * smooth((t - (f.T1 - 0.6)) / 0.9);
+      rot = ramp + (ang - ramp) * smooth(tau * 5);
+      sc = 1 - 0.92 * (1 - Math.pow(1 - tau, 1.5));
+      op = tau > .82 ? 1 - (tau - .82) / .18 : 1;
+      if (t - f.T1 > .25 && tau < .9) {
+        const e = $('exh').getBoundingClientRect();
+        puff(e.left, e.top, 'trail', sc);
+      }
+      if (tau >= 1) f.done = true;
+    }
+    planeEl.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${sc})`;
+    planeEl.style.opacity = op;
+    const lift = -y;
+    shadowEl.style.transform = `translateX(${x}px) scaleX(${clamp(1 - lift / 300, .3, 1)})`;
+    shadowEl.style.opacity = clamp(1 - lift / 70, 0, 1);
+    if (f.done && demo) setTimeout(() => { if (f.my === runId) { demo = false; resetScene(); tick(); } }, 2500);
+  }
+
+  function resetScene() {
+    runId++; phase = 'walk'; flight = null; particles.length = 0;
+    soldier.getAnimations().forEach(a => a.cancel());
+    soldier.classList.remove('gone', 'salute'); pctEl.classList.remove('gone');
+    planeEl.classList.remove('closed');
+    planeEl.style.transform = ''; planeEl.style.opacity = '';
+    shadowEl.style.transform = ''; shadowEl.style.opacity = '';
+  }
+
+  /* ---------- таймер ---------- */
+  function renderStatic() {
+    $('title').textContent = titleStr;
+    document.title = titleStr;
+    const t = new Date(targetStr);
+    $('target').textContent = isNaN(t) ? '' : t.toLocaleString('ru-RU', {
+      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+
+  const shown = {};
+  function setNum(id, val, big) {
+    if (shown[id] === val) return;
+    const first = shown[id] === undefined;
+    shown[id] = val; const el = $(id); el.textContent = val;
+    if (first || !el.animate) return;
+    el.animate(big
+      ? [{ transform: 'scale(1.06)', opacity: .7 }, { transform: 'scale(1)', opacity: 1 }]
+      : [{ transform: 'translateY(-14%) scale(1.12)', textShadow: '0 0 16px #7fffd4, 0 0 34px rgba(127,255,212,.8)', color: '#ffffff' },
+         { transform: 'translateY(0) scale(1)', textShadow: '0 0 10px rgba(127,255,212,.55), 0 0 22px rgba(127,255,212,.25)', color: '#f3fffb' }],
+      { duration: big ? 700 : 450, easing: 'cubic-bezier(.2,.9,.3,1)' });
+  }
+
+  function showDone(on) { $('counter').hidden = on; $('done').hidden = !on; }
+
+  function tick() {
+    const diff = new Date(targetStr) - new Date();
+    const over = isNaN(diff) || diff <= 0;
+    if (over || demo) { showDone(true); if (over) launch(); return; }
+    showDone(false);
+    const span = new Date(targetStr) - new Date(startStr);
+    const progress = span > 0 ? clamp(1 - diff / span, 0, 1) : 0;
+    if (phase === 'walk') placeSoldier(progress);
+    const total = Math.floor(diff / 1000);
+    const d = Math.floor(total / 86400), h = Math.floor(total % 86400 / 3600),
+          m = Math.floor(total % 3600 / 60), s = total % 60;
+    setNum('d', String(d), true);
+    $('dl').textContent = plural(d, 'день', 'дня', 'дней');
+    setNum('h', pad(h)); $('hl').textContent = plural(h, 'час', 'часа', 'часов');
+    setNum('m', pad(m)); $('ml').textContent = plural(m, 'минута', 'минуты', 'минут');
+    setNum('s', pad(s)); $('sl').textContent = plural(s, 'секунда', 'секунды', 'секунд');
+  }
+
+  /* ---------- настройки ---------- */
+  $('gear').onclick = () => { $('name').value = titleStr; $('when').value = targetStr; $('from').value = startStr; $('panel').classList.add('open'); };
+  $('cancel').onclick = () => $('panel').classList.remove('open');
+  $('panel').onclick = e => { if (e.target.id === 'panel') $('panel').classList.remove('open'); };
+  $('save').onclick = () => {
+    let v = $('when').value;
+    if (v) { if (v.length === 16) v += ':00'; targetStr = v; store.set('cd_target', v); }
+    let f = $('from').value;
+    if (f) { if (f.length === 16) f += ':00'; startStr = f; store.set('cd_start', f); }
+    titleStr = $('name').value.trim() || DEFAULT_TITLE; store.set('cd_title', titleStr);
+    $('panel').classList.remove('open'); demo = false; resetScene(); renderStatic(); tick();
+  };
+  $('demo').onclick = () => {
+    $('panel').classList.remove('open');
+    resetScene(); demo = true; tick(); launch();
+  };
+
+  renderStatic(); tick();
+  requestAnimationFrame(() => { soldier.classList.add('ready'); pctEl.classList.add('ready'); });
+  setInterval(tick, 1000);
+
+  /* =====================================================================
+     ФОН: небо, звёзды, сияние, город, лес, аэропорт, снег (3 слоя)
+     Статичные слои рисуются один раз в кэш — кадр стоит дёшево.
+     ===================================================================== */
+  const bg = $('sky'), bctx = bg.getContext('2d');
+  const fx = $('fx'), fctx = fx.getContext('2d');
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const lowEnd = (navigator.hardwareConcurrency || 4) <= 4 || (navigator.deviceMemory || 4) <= 2;
+  const M = 24;               // запас по краям для параллакса
+  let W, H, dpr, horizon, sky, city, forest, aur, actx, AW, AH, stars = [], snowFar = [], snowMid = [], snowNear = [];
+  let towerX, towerTop, CH = 190;
+  const particles = [];
+
+  function mk(w, h) { const c = document.createElement('canvas'); c.width = Math.ceil(w * dpr); c.height = Math.ceil(h * dpr); const x = c.getContext('2d'); x.scale(dpr, dpr); return [c, x]; }
+
+  // спрайты
+  function sprite(size, stops) {
+    const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d');
+    const g = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    stops.forEach(([o, col]) => g.addColorStop(o, col)); x.fillStyle = g; x.fillRect(0, 0, size, size); return c;
+  }
+  const flake = sprite(32, [[0, 'rgba(255,255,255,1)'], [.35, 'rgba(255,255,255,.8)'], [1, 'rgba(255,255,255,0)']]);
+  const glowRed = sprite(32, [[0, 'rgba(255,120,110,1)'], [.25, 'rgba(255,60,60,.6)'], [1, 'rgba(255,0,0,0)']]);
+  const glowWarm = sprite(32, [[0, 'rgba(255,236,190,1)'], [.3, 'rgba(255,200,120,.45)'], [1, 'rgba(255,180,80,0)']]);
+  const glowBlue = sprite(32, [[0, 'rgba(210,235,255,1)'], [.3, 'rgba(90,170,255,.45)'], [1, 'rgba(60,140,255,0)']]);
+  const puffSpr = sprite(32, [[0, 'rgba(235,242,255,.9)'], [.5, 'rgba(225,235,255,.35)'], [1, 'rgba(220,230,255,0)']]);
+  const bands = [
+    { col: [120, 255, 205], a: .55, base: .36, h: .32, f1: 1.1, f2: 3.1, s1: .00013, s2: .0002, o: 0 },
+    { col: [170, 130, 255], a: .38, base: .30, h: .26, f1: .8, f2: 2.3, s1: .0001, s2: .00017, o: 2.1 },
+    { col: [90, 200, 255], a: .30, base: .44, h: .22, f1: 1.5, f2: 3.7, s1: .00016, s2: .00011, o: 4.2 }
+  ].map(b => { // вертикальная «полоска» занавеса: яркая внизу, тает вверх
+    const c = document.createElement('canvas'); c.width = 1; c.height = 64; const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, 64); const [r, gg, bb] = b.col;
+    g.addColorStop(0, `rgba(${r},${gg},${bb},0)`); g.addColorStop(.55, `rgba(${r},${gg},${bb},.25)`);
+    g.addColorStop(.88, `rgba(${r},${gg},${bb},.95)`); g.addColorStop(1, `rgba(${r},${gg},${bb},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, 1, 64); b.strip = c; return b;
+  });
+
+  function build() {
+    dpr = Math.min(window.devicePixelRatio || 1, lowEnd ? 1.5 : 2);
+    W = innerWidth; H = innerHeight;
+    for (const c of [bg, fx]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    bctx.setTransform(dpr, 0, 0, dpr, 0, 0); fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    horizon = $('ground').getBoundingClientRect().top + 1;
+
+    // небо
+    let x; [sky, x] = mk(W, H);
+    const g = x.createLinearGradient(0, 0, 0, horizon);
+    g.addColorStop(0, '#03040b'); g.addColorStop(.45, '#070b1d'); g.addColorStop(.8, '#0f1634'); g.addColorStop(1, '#1d2550');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    const hz = x.createRadialGradient(W * .5, horizon, 0, W * .5, horizon, W * .9);
+    hz.addColorStop(0, 'rgba(120,140,220,.22)'); hz.addColorStop(1, 'rgba(120,140,220,0)');
+    x.fillStyle = hz; x.fillRect(0, 0, W, H);
+
+    // город (дальний слой)
+    [city, x] = mk(W + 2 * M, CH);
+    let cx = 0;
+    while (cx < W + 2 * M) {
+      const w = rnd(12, 34), h = (rnd(22, 70) + 26 * Math.max(0, Math.sin(cx / 90))) ;
+      x.fillStyle = '#121a3c'; x.fillRect(cx, CH - h, w, h);
+      if (Math.random() < .18) { x.fillRect(cx + w / 2 - 1, CH - h - rnd(6, 16), 2, 16); }
+      for (let wy = CH - h + 4; wy < CH - 6; wy += 5) for (let wx = cx + 3; wx < cx + w - 3; wx += 4)
+        if (Math.random() < .2) { x.fillStyle = Math.random() < .8 ? 'rgba(255,214,140,.55)' : 'rgba(170,210,255,.5)'; x.fillRect(wx, wy, 1.6, 2); }
+      cx += w + rnd(0, 4);
+    }
+    // телебашня
+    const tvx = (W + 2 * M) * .78;
+    x.fillStyle = '#121a3c'; x.beginPath(); x.moveTo(tvx - 7, CH); x.lineTo(tvx - 1.5, CH - 150); x.lineTo(tvx + 1.5, CH - 150); x.lineTo(tvx + 7, CH); x.fill();
+    x.fillRect(tvx - 5, CH - 112, 10, 6); x.fillRect(tvx - .7, CH - 175, 1.4, 26);
+    const haze = x.createLinearGradient(0, CH - 80, 0, CH);
+    haze.addColorStop(0, 'rgba(60,80,150,0)'); haze.addColorStop(1, 'rgba(90,110,190,.35)');
+    x.fillStyle = haze; x.fillRect(0, CH - 80, W + 2 * M, 80);
+
+    // лес + аэропорт (ближний слой)
+    [forest, x] = mk(W + 2 * M, CH);
+    for (let fx0 = -10; fx0 < W + 2 * M + 10; fx0 += rnd(5, 10)) {
+      const h = rnd(14, 34) * (0.75 + 0.35 * Math.sin(fx0 / 55)), w = h * .55;
+      x.fillStyle = '#080c20';
+      for (let i = 0; i < 3; i++) {
+        const ty = CH - h + i * h * .26, tw = w * (.45 + i * .28);
+        x.beginPath(); x.moveTo(fx0, ty); x.lineTo(fx0 - tw / 2, ty + h * .42); x.lineTo(fx0 + tw / 2, ty + h * .42); x.fill();
+      }
+      x.fillRect(fx0 - 1, CH - 6, 2, 6);
+      x.fillStyle = 'rgba(210,225,255,.28)';
+      x.beginPath(); x.moveTo(fx0, CH - h); x.lineTo(fx0 - w * .14, CH - h + h * .14); x.lineTo(fx0 + w * .1, CH - h + h * .12); x.fill();
+    }
+    // терминал
+    const tL = (W + 2 * M) * .4, tR = W + 2 * M;
+    x.fillStyle = '#0c1230'; x.fillRect(tL, CH - 22, tR - tL, 22);
+    x.fillStyle = '#0e1538'; x.beginPath(); x.moveTo(tL - 6, CH - 22); x.quadraticCurveTo((tL + tR) / 2, CH - 34, tR, CH - 24); x.lineTo(tR, CH - 20); x.lineTo(tL - 6, CH - 20); x.fill();
+    x.fillStyle = 'rgba(140,210,255,.45)'; x.fillRect(tL + 4, CH - 16, tR - tL - 8, 5);
+    for (let wx = tL + 6; wx < tR - 4; wx += 9) { x.fillStyle = 'rgba(8,12,32,.8)'; x.fillRect(wx, CH - 16, 1.2, 5); }
+    // диспетчерская вышка
+    towerX = (W + 2 * M) * .26; towerTop = CH - 112;
+    x.fillStyle = '#0c1230';
+    x.beginPath(); x.moveTo(towerX - 6, CH); x.lineTo(towerX - 4, CH - 92); x.lineTo(towerX + 4, CH - 92); x.lineTo(towerX + 6, CH); x.fill();
+    x.beginPath(); x.moveTo(towerX - 11, CH - 92); x.lineTo(towerX - 15, CH - 106); x.lineTo(towerX + 15, CH - 106); x.lineTo(towerX + 11, CH - 92); x.fill();
+    const gl = x.createLinearGradient(0, CH - 105, 0, CH - 95);
+    gl.addColorStop(0, 'rgba(127,255,212,.9)'); gl.addColorStop(1, 'rgba(90,200,255,.6)');
+    x.fillStyle = gl; x.beginPath(); x.moveTo(towerX - 13, CH - 104); x.lineTo(towerX + 13, CH - 104); x.lineTo(towerX + 10.5, CH - 95); x.lineTo(towerX - 10.5, CH - 95); x.fill();
+    x.fillStyle = 'rgba(8,12,32,.85)'; for (let i = -9; i <= 9; i += 6) x.fillRect(towerX + i, CH - 104, 1, 9);
+    x.fillStyle = '#0c1230'; x.fillRect(towerX - 16, CH - 108, 32, 3); x.fillRect(towerX - .8, towerTop, 1.6, 6);
+    x.globalAlpha = .55; x.drawImage(glowBlue, towerX - 30, CH - 118, 60, 36); x.globalAlpha = 1;
+    for (let i = 0; i < 6; i++) { x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(towerX - 4, CH - 84 + i * 13, 8, 1); }
+    // огни аэропорта вдоль горизонта
+    for (let lx = 4; lx < W + 2 * M; lx += 11) {
+      const blue = (lx / 11 | 0) % 3 === 0;
+      x.drawImage(blue ? glowBlue : glowWarm, lx - 5, CH - 7, 10, 10);
+    }
+    // прожекторы перрона
+    for (const px of [.55, .86]) {
+      const X = (W + 2 * M) * px;
+      x.fillStyle = '#0c1230'; x.fillRect(X - .8, CH - 60, 1.6, 60);
+      const cone = x.createLinearGradient(0, CH - 60, 0, CH);
+      cone.addColorStop(0, 'rgba(255,225,170,.28)'); cone.addColorStop(1, 'rgba(255,225,170,0)');
+      x.fillStyle = cone; x.beginPath(); x.moveTo(X - 3, CH - 60); x.lineTo(X - 26, CH); x.lineTo(X + 26, CH); x.lineTo(X + 3, CH - 60); x.fill();
+      x.drawImage(glowWarm, X - 9, CH - 69, 18, 18);
+    }
+
+    // сияние: низкое разрешение, растягивается — мягко и дёшево
+    AW = Math.ceil(W / 3); AH = Math.ceil(horizon * .62 / 3);
+    aur = document.createElement('canvas'); aur.width = AW; aur.height = AH; actx = aur.getContext('2d');
+
+    const n = (W * H) / 10000;
+    stars = Array.from({ length: Math.round(n * 4.2) }, () => ({ x: Math.random() * W, y: Math.random() * horizon * .8, r: Math.random() < .12 ? rnd(1.4, 2) : rnd(.6, 1.2), p: Math.random() * 6.28, sp: rnd(900, 2200) }));
+    const flakes = (count, r0, r1, v0, v1) => Array.from({ length: Math.round(count) }, () => ({ x: Math.random() * (W + 40) - 20, y: Math.random() * H, r: rnd(r0, r1), v: rnd(v0, v1), w: Math.random() * 6.28, ws: rnd(.6, 1.4) }));
+    snowFar = flakes(n * (lowEnd ? 2.2 : 3.2), .5, 1.1, 10, 18);
+    snowMid = flakes(n * (lowEnd ? 1.3 : 1.8), 1.3, 2.3, 26, 40);
+    snowNear = flakes(n * (lowEnd ? .25 : .38), 3, 5.5, 55, 85);
+  }
+
+  // параллакс: наклон телефона или движение мыши
+  let par = 0, parT = 0;
+  addEventListener('deviceorientation', e => { if (e.gamma != null) parT = clamp(e.gamma / 25, -1, 1); });
+  addEventListener('pointermove', e => { if (e.pointerType === 'mouse') parT = (e.clientX / W - .5) * 2; });
+
+  function puff(x, y, kind, sc = 1) {
+    if (particles.length > 260) return;
+    particles.push(kind === 'trail'
+      ? { x: x + rnd(-1, 1), y: y + rnd(-1, 1), vx: rnd(-4, 4), vy: rnd(-3, 3), r0: 2.5 * sc + 1, r1: 12 * sc + 4, life: 2.6, age: 0, a: .75 }
+      : { x: x + rnd(-6, 6), y: y, vx: rnd(10, 40), vy: rnd(-16, -4), r0: 2, r1: 9, life: .9, age: 0, a: .55 });
+  }
+
+  let rt = 0;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { build(); if (phase === 'walk') placeSoldier(lastProgress); }, 120); });
+  build();
+
+  let last = performance.now(), frameNo = 0;
+  function drawSnow(ctx, arr, dt, k, sprite) {
+    const ox = par * k;
+    if (!sprite) ctx.beginPath();
+    for (const f of arr) {
+      f.y += f.v * dt; f.w += dt * f.ws; f.x += Math.sin(f.w) * 12 * dt * (f.r / 2);
+      if (f.y > H + 6) { f.y = -6; f.x = Math.random() * (W + 40) - 20; }
+      const X = f.x + ox;
+      if (sprite) { const s = f.r * 2.6; ctx.drawImage(flake, X - s / 2, f.y - s / 2, s, s); }
+      else { ctx.moveTo(X + f.r, f.y); ctx.arc(X, f.y, f.r, 0, 6.283); }
+    }
+    if (!sprite) ctx.fill();
+  }
+
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now; frameNo++;
+    par += (parT - par) * Math.min(1, dt * 3);
+    const t = now;
+
+    bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over';
+    bctx.drawImage(sky, 0, 0, W, H);
+
+    bctx.fillStyle = '#fff';
+    for (const s of stars) {
+      bctx.globalAlpha = .35 + .65 * Math.abs(Math.sin(t / s.sp + s.p));
+      bctx.fillRect(s.x + par * 1.5, s.y, s.r, s.r);
+    }
+
+    // сияние обновляется через кадр — оно медленное
+    if (frameNo % 2 === 1 || lowEnd && frameNo % 3 !== 1) {} else {
+      actx.globalCompositeOperation = 'source-over'; actx.clearRect(0, 0, AW, AH);
+      actx.globalCompositeOperation = 'lighter';
+      for (const b of bands) {
+        for (let x = 0; x < AW; x++) {
+          const xf = x / AW * 6.283;
+          const yb = AH * b.base + Math.sin(xf * b.f1 + t * b.s1 + b.o) * AH * .1 + Math.sin(xf * b.f2 - t * b.s2 + b.o) * AH * .04;
+          const h = AH * (b.h + .1 * Math.sin(x * .045 + t * .00025 + b.o));
+          let a = b.a * (.5 + .5 * Math.sin(x * .13 + t * .0004 + b.o) * Math.sin(x * .031 - t * .00021 + b.o));
+          a *= .75 + .25 * Math.sin(t * .00035 + b.o);
+          if (a < .02) continue;
+          actx.globalAlpha = a; actx.drawImage(b.strip, x, yb - h, 1.6, h * 1.15);
+        }
+      }
+    }
+    bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'lighter';
+    bctx.drawImage(aur, 0, 0, AW, AH, par * 3, 0, W, horizon * .62);
+    bctx.globalCompositeOperation = 'source-over';
+
+    // дальний снег — за городом
+    bctx.globalAlpha = .45; bctx.fillStyle = '#dfe8ff';
+    drawSnow(bctx, snowFar, dt, 3);
+    bctx.globalAlpha = 1;
+    bctx.drawImage(city, -M + par * 5, horizon - CH, W + 2 * M, CH);
+    const fo = -M + par * 10;
+    bctx.drawImage(forest, fo, horizon - CH, W + 2 * M, CH);
+    // маячок на вышке
+    const bl = (t % 1500) / 1500;
+    bctx.globalAlpha = bl < .12 ? 1 : bl < .2 ? .4 : .12;
+    bctx.drawImage(glowRed, fo + towerX - 9, horizon - CH + towerTop - 9, 18, 18);
+    bctx.globalAlpha = .75; bctx.fillStyle = '#eef4ff';
+    drawSnow(bctx, snowMid, dt, 7);
+    bctx.globalAlpha = 1;
+
+    // передний слой: крупный снег + инверсионный след
+    fctx.clearRect(0, 0, W, H);
+    stepFlight(now);
+    if (particles.length) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]; p.age += dt;
+        if (p.age >= p.life) { particles.splice(i, 1); continue; }
+        const k = p.age / p.life; p.x += p.vx * dt; p.y += p.vy * dt;
+        const r = p.r0 + (p.r1 - p.r0) * Math.sqrt(k);
+        fctx.globalAlpha = p.a * (1 - k) * (1 - k);
+        fctx.drawImage(puffSpr, p.x - r, p.y - r, r * 2, r * 2);
+      }
+    }
+    fctx.globalAlpha = .85;
+    drawSnow(fctx, snowNear, dt, 16, true);
+    fctx.globalAlpha = 1;
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

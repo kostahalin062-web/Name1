@@ -1,0 +1,13 @@
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050716"/><stop offset=".6" stop-color="#0d1438"/><stop offset="1" stop-color="#1f2a5c"/></linearGradient>
+    <radialGradient id="a1" cx=".3" cy=".25" r=".55"><stop offset="0" stop-color="#7fffd4" stop-opacity=".55"/><stop offset="1" stop-color="#7fffd4" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a2" cx=".8" cy=".2" r=".5"><stop offset="0" stop-color="#b48cff" stop-opacity=".5"/><stop offset="1" stop-color="#b48cff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <rect width="1024" height="1024" fill="url(#a1)"/>
+  <rect width="1024" height="1024" fill="url(#a2)"/>
+  <g fill="#fff">
+    <circle cx="150" cy="180" r="5"/><circle cx="820" cy="140" r="4"/><circle cx="880" cy="420" r="6"/><circle cx="120" cy="560" r="4"/>
+    <circle cx="300" cy="90" r="3"/><circle cx="700" cy="300" r="3"/><circle cx="220" cy="860" r="5"/><circle cx="900" cy="780" r="4"/>
+    <circle cx="640" cy="90" r="5"/><circle cx="420" cy="180" r="3"/><circle cx="80" cy="360" r="3"/><circle cx="760" cy="900" r="3"/>
+  </g>

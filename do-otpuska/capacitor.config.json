@@ -1,0 +1,9 @@
+{
+  "appId": "app.dootpuska.countdown",
+  "appName": "До отпуска",
+  "webDir": "www",
+  "backgroundColor": "#05060f",
+  "android": {
+    "backgroundColor": "#05060f"
+  }
+}
