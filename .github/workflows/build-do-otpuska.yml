@@ -1,0 +1,83 @@
+name: Собрать APK «До отпуска»
+
+on:
+  push:
+    paths:
+      - 'do-otpuska/**'
+      - '.github/workflows/build-do-otpuska.yml'
+  workflow_dispatch: {}        # кнопка «Run workflow» для ручного запуска
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-do-otpuska
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: do-otpuska
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: do-otpuska/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-otpusk-${{ runner.os }}-${{ hashFiles('do-otpuska/package-lock.json') }}
+          restore-keys: gradle-otpusk-${{ runner.os }}-
+
+      - name: Подготовить Android-проект
+        run: |
+          npm ci --no-audit --no-fund
+          npx cap sync android
+          # номер версии = номер сборки, чтобы обновление ставилось поверх старой версии
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          # постоянный ключ подписи: новая версия ставится поверх, настройки не теряются
+          mkdir -p ~/.android && cp debug.keystore ~/.android/debug.keystore
+
+      - name: Собрать APK
+        working-directory: do-otpuska/android
+        run: |
+          chmod +x gradlew
+          for attempt in 1 2 3; do
+            if ./gradlew assembleDebug --no-daemon; then break; fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            echo "Сборка не удалась (попытка $attempt), повтор через 60 секунд…"
+            sleep 60
+          done
+          cp app/build/outputs/apk/debug/app-debug.apk ../do-otpuska.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: do-otpuska-apk
+          path: do-otpuska/do-otpuska.apk
+
+      - name: Выложить APK для скачивания (Releases)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Приложение «До отпуска» для Android. Версия 1.0.${{ github.run_number }}, собрано $(date -u '+%Y-%m-%d %H:%M') UTC.
+
+          Скачайте файл do-otpuska.apk ниже и откройте его на телефоне."
+          if ! gh release view do-otpuska >/dev/null 2>&1; then
+            gh release create do-otpuska --target "${{ github.sha }}" --title "До отпуска — APK" --notes "$NOTES" --latest=false
+          else
+            gh release edit do-otpuska --notes "$NOTES"
+          fi
+          gh release upload do-otpuska do-otpuska.apk --clobber
