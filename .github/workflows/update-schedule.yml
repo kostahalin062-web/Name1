@@ -1,0 +1,41 @@
+name: Обновить расписание
+
+on:
+  schedule:
+    - cron: '17 22 * * *'   # каждый день в 05:17 по Барнаулу
+  workflow_dispatch: {}        # кнопка «Run workflow» для ручного запуска
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-schedule
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Скачать расписание с сайта АлтГУ
+        run: |
+          curl -fsSL --retry 3 --max-time 60 \
+            -A "Mozilla/5.0 (homework-app schedule sync)" \
+            -o /tmp/schedule.ics \
+            "https://www.asu.ru/timetable/students/15/2129441855/?file=2129441855.ics"
+          grep -q 'BEGIN:VCALENDAR' /tmp/schedule.ics
+          grep -q 'BEGIN:VEVENT' /tmp/schedule.ics
+          cp /tmp/schedule.ics docs/schedule.ics
+
+      - name: Сохранить, если расписание изменилось
+        run: |
+          if git diff --quiet -- docs/schedule.ics; then
+            echo "Расписание не изменилось"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git add docs/schedule.ics
+          git commit -m "Обновить расписание"
+          git push
