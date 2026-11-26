@@ -151,7 +151,9 @@
     if (manual || !state.lessons.length) setStatus('Обновляю расписание…');
     const sources = [];
     if (state.settings.url) sources.push([state.settings.url, 'сайт АлтГУ']);
-    sources.push([(NATIVE ? PAGES_ICS : LOCAL_ICS) + '?t=' + Date.now(), 'копия на GitHub']);
+    // The GitHub copy is the schedule of the default group only.
+    const ownGroup = !state.settings.url || state.settings.url === DEFAULT_URL;
+    if (ownGroup) sources.push([(NATIVE ? PAGES_ICS : LOCAL_ICS) + '?t=' + Date.now(), 'копия на GitHub']);
     let ok = false;
     for (const [url, name] of sources) {
       try { applyICS(await fetchText(url), name); ok = true; break; } catch { /* try next source */ }
@@ -163,9 +165,12 @@
       render();
       if (manual) toast('Расписание обновлено');
     } else {
+      const ownGroup = !state.settings.url || state.settings.url === DEFAULT_URL;
       setStatus(state.lessons.length
         ? 'Нет связи — показано сохранённое расписание'
-        : 'Не удалось загрузить расписание. Загрузите файл .ics в настройках (⋮).', true);
+        : !NATIVE && !ownGroup
+          ? 'Сайт АлтГУ не даёт браузеру скачать расписание. Установите APK или загрузите файл .ics в настройках (⋮).'
+          : 'Не удалось загрузить расписание. Загрузите файл .ics в настройках (⋮).', true);
     }
   }
 
@@ -695,12 +700,36 @@
     $('#set-remind-default').checked = state.settings.remindDefault !== false;
     $('#dlg-settings').showModal();
   };
+  // Accepts both the group page (…/timetable/students/15/2129441855/) and the export
+  // link (…/?file=2129441855.ics); a page link is turned into the export link.
+  function normalizeUrl(u) {
+    u = (u || '').trim();
+    if (!u) return DEFAULT_URL;
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    const m = /^https?:\/\/(?:www\.)?asu\.ru\/(timetable\/[^?#]*?)\/?(?:[?#].*)?$/i.exec(u);
+    if (m && !/[?&]file=/.test(u)) {
+      const id = (m[1].match(/(\d+)$/) || [])[1];
+      if (id) return `https://www.asu.ru/${m[1]}/?file=${id}.ics`;
+    }
+    return u;
+  }
+
   $('#btn-save-settings').onclick = () => {
-    state.settings.url = $('#set-url').value.trim();
+    const url = normalizeUrl($('#set-url').value);
+    const changed = url !== state.settings.url;
+    state.settings.url = url;
+    if (changed) {
+      // another group: forget the old schedule (homework stays)
+      state.lessons = [];
+      state.calName = '';
+      state.lastUpdate = null;
+      state.lastCheckDay = null;
+    }
     state.settings.remindTime = $('#set-remind-time').value || '18:00';
     state.settings.remindDefault = $('#set-remind-default').checked;
     save();
     render();
+    if (changed) refresh(true);
   };
   $('#btn-test-notify').onclick = async () => {
     if (!(await ensureNotifyPermission())) return;
