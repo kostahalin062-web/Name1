@@ -24,6 +24,7 @@
     homework: store.get('homework', []),
     settings: Object.assign({ url: DEFAULT_URL, remindTime: '18:00', remindDefault: true }, store.get('settings', {})),
     lastUpdate: store.get('lastUpdate', null),
+    lastCheckDay: store.get('lastCheckDay', null),
     calName: store.get('calName', ''),
     weekOffset: 0,
     tab: 'schedule',
@@ -33,38 +34,68 @@
   // ---------- helpers ----------
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pad = (n) => String(n).padStart(2, '0');
 
-  function ymd(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-  function fromYmd(s) {
-    const [y, m, d] = s.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
+  function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+  function fromYmd(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
   function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
-  function mondayOf(d) { const r = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const wd = (r.getDay() + 6) % 7; return addDays(r, -wd); }
+  function mondayOf(d) { const r = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return addDays(r, -((r.getDay() + 6) % 7)); }
   function todayYmd() { return ymd(new Date()); }
-  function prettyDate(s, withWeekday = true) {
-    const d = fromYmd(s);
-    const base = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
-    return withWeekday ? `${DAYS[d.getDay()]}, ${base}` : base;
-  }
+  function nowHM() { const n = new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}`; }
+  function prettyDate(s) { const d = fromYmd(s); return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`; }
   function relDate(s) {
     const diff = Math.round((fromYmd(s) - fromYmd(todayYmd())) / 86400000);
-    if (diff === 0) return 'сегодня';
-    if (diff === 1) return 'завтра';
-    if (diff === -1) return 'вчера';
+    if (diff === 0) return 'Сегодня';
+    if (diff === 1) return 'Завтра';
+    if (diff === -1) return 'Вчера';
     return prettyDate(s);
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  const lkey = (l) => l.date + 'T' + l.start;
 
   function save() {
     store.set('lessons', state.lessons);
     store.set('homework', state.homework);
     store.set('settings', state.settings);
     store.set('lastUpdate', state.lastUpdate);
+    store.set('lastCheckDay', state.lastCheckDay);
     store.set('calName', state.calName);
     syncReminders();
+  }
+
+  // ---------- homework model ----------
+  // Homework remembers only the lesson where it was given (subject + date/time).
+  // The lesson it is due for is looked up every time: the next lesson with the same
+  // subject in the current schedule. So when the schedule changes or the next lesson
+  // appears on the site later, the homework automatically moves to the right lesson.
+  function dueLesson(h) {
+    const from = h.fromDate + 'T' + (h.fromStart || '00:00');
+    for (const l of state.lessons) {
+      if (l.subject === h.subject && !l.cancelled && lkey(l) > from) return l;
+    }
+    return null;
+  }
+  function hwFor(lesson) {
+    return state.homework.filter((h) => { const d = dueLesson(h); return d && d.uid === lesson.uid; });
+  }
+  function hwGivenAt(lesson) {
+    return state.homework.filter((h) => h.fromUid === lesson.uid ||
+      (h.subject === lesson.subject && h.fromDate === lesson.date && h.fromStart === lesson.start));
+  }
+  function pendingCount() { return state.homework.filter((h) => !h.done).length; }
+
+  // Upgrade homework saved by the earlier version of the app.
+  function migrate() {
+    let changed = false;
+    for (const h of state.homework) {
+      if (h.fromDate) continue;
+      const src = h.fromUid && state.lessons.find((l) => l.uid === h.fromUid);
+      h.fromDate = src ? src.date : (h.createdAt || new Date().toISOString()).slice(0, 10);
+      h.fromStart = src ? src.start : '00:00';
+      delete h.due; delete h.lessonUid;
+      changed = true;
+    }
+    if (changed) save();
   }
 
   // ---------- schedule loading ----------
@@ -73,11 +104,12 @@
     if (!lessons.length) throw new Error('В файле нет пар');
     const min = lessons[0].date;
     const max = lessons[lessons.length - 1].date;
-    // Keep previously known lessons outside the range of the new file (history).
+    // Keep lessons outside the range of the new file (past weeks stay in history).
     const kept = state.lessons.filter((l) => l.date < min || l.date > max);
-    state.lessons = kept.concat(lessons).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+    state.lessons = kept.concat(lessons).sort((a, b) => lkey(a).localeCompare(lkey(b)));
     if (calName) state.calName = calName;
     state.lastUpdate = { at: new Date().toISOString(), source };
+    state.lastCheckDay = todayYmd();
     save();
   }
 
@@ -94,17 +126,13 @@
     if (refreshing) return;
     refreshing = true;
     $('#btn-refresh').classList.add('spin');
-    setStatus('Обновляю расписание…');
+    if (manual || !state.lessons.length) setStatus('Обновляю расписание…');
     const sources = [];
     if (state.settings.url) sources.push([state.settings.url, 'сайт АлтГУ']);
     sources.push([LOCAL_ICS + '?t=' + Date.now(), 'копия на GitHub']);
     let ok = false;
     for (const [url, name] of sources) {
-      try {
-        applyICS(await fetchText(url), name);
-        ok = true;
-        break;
-      } catch (e) { /* try next source */ }
+      try { applyICS(await fetchText(url), name); ok = true; break; } catch { /* try next source */ }
     }
     refreshing = false;
     $('#btn-refresh').classList.remove('spin');
@@ -117,6 +145,11 @@
         ? 'Нет связи — показано сохранённое расписание'
         : 'Не удалось загрузить расписание. Загрузите файл .ics в настройках (⋮).', true);
     }
+  }
+
+  // The schedule is checked once a day (and any time with the ⟳ button).
+  function refreshIfNewDay() {
+    if (state.lastCheckDay !== todayYmd()) refresh(false);
   }
 
   function setStatus(text, warn) {
@@ -132,28 +165,21 @@
     el.textContent = text;
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
   }
-
-  // ---------- homework logic ----------
-  function hwFor(lesson) {
-    return state.homework.filter((h) => h.lessonUid === lesson.uid ||
-      (!h.lessonUid && h.subject === lesson.subject && h.due === lesson.date));
-  }
-  function pendingCount() { return state.homework.filter((h) => !h.done).length; }
 
   // ---------- reminders ----------
-  // A reminder fires the day before the lesson the homework is due for, at settings.remindTime.
-  function remindAt(h) {
-    if (!h.due) return null;
+  // Fires the day before the lesson the homework is due for, at settings.remindTime.
+  function remindAtFor(lesson) {
+    if (!lesson) return null;
     const [hh, mm] = (state.settings.remindTime || '18:00').split(':').map(Number);
-    const d = addDays(fromYmd(h.due), -1);
+    const d = addDays(fromYmd(lesson.date), -1);
     d.setHours(hh || 0, mm || 0, 0, 0);
     return d.getTime();
   }
   function remindLabel(at) {
     const d = new Date(at);
-    return `${relDate(ymd(d))} в ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${relDate(ymd(d)).toLowerCase()} в ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   function syncReminders() {
@@ -161,17 +187,16 @@
     const list = [];
     for (const h of state.homework) {
       if (!h.remind || h.done) continue;
-      const at = remindAt(h);
+      const l = dueLesson(h);
+      const at = remindAtFor(l);
       if (at == null) continue;
-      const lesson = h.lessonUid && state.lessons.find((l) => l.uid === h.lessonUid);
-      const when = lesson ? `${prettyDate(lesson.date)}, ${lesson.start}` : prettyDate(h.due);
       list.push({
         id: h.id,
         key: h.id + '@' + at,
         at,
         from: Date.parse(h.remindFrom || h.createdAt) || 0,
         title: `📝 Завтра: ${h.subject}`,
-        body: `${h.text}\nПара: ${when}${lesson && lesson.room ? ', ауд. ' + lesson.room : ''}`,
+        body: `${h.text}\nПара: ${prettyDate(l.date)}, ${l.start}${l.room ? ', ауд. ' + l.room : ''}`,
       });
     }
     window.ReminderDB.set('reminders', list).catch(() => {});
@@ -179,18 +204,12 @@
 
   async function fireDueReminders() {
     if (!window.ReminderDB || !('serviceWorker' in navigator)) return;
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      await window.ReminderDB.fireDue(reg);
-    } catch { /* ignore */ }
+    try { await window.ReminderDB.fireDue(await navigator.serviceWorker.ready); } catch { /* ignore */ }
   }
 
   // Returns true when notifications are allowed (asks the first time).
   async function ensureNotifyPermission() {
-    if (typeof Notification === 'undefined') {
-      toast('Этот браузер не поддерживает уведомления');
-      return false;
-    }
+    if (typeof Notification === 'undefined') { toast('Этот браузер не поддерживает уведомления'); return false; }
     if (Notification.permission === 'default') {
       try { await Notification.requestPermission(); } catch { /* ignore */ }
       if (Notification.permission === 'granted') setupBackgroundSync();
@@ -211,14 +230,6 @@
     } catch { /* not supported */ }
   }
 
-  // Upcoming lessons of the same subject after the given lesson (for "сдать к").
-  function nextLessonsOf(lesson, limit = 8) {
-    const key = lesson.date + lesson.start;
-    return state.lessons
-      .filter((l) => l.subject === lesson.subject && (l.date + l.start) > key && !l.cancelled)
-      .slice(0, limit);
-  }
-
   // ---------- rendering ----------
   function render() {
     $('#title').textContent = state.tab === 'schedule' ? 'Расписание' : 'Домашние задания';
@@ -233,15 +244,16 @@
     if (state.tab === 'schedule') renderSchedule(); else renderHomework();
   }
 
+  function typeClass(t) { return { 'лек.': 'lec', 'пр.з.': 'prac', 'лаб.': 'lab' }[t] || 'other'; }
+
   function renderSchedule() {
     const monday = addDays(mondayOf(new Date()), state.weekOffset * 7);
     const sunday = addDays(monday, 6);
-    const label = state.weekOffset === 0 ? 'Эта неделя' : state.weekOffset === 1 ? 'Следующая неделя' : state.weekOffset === -1 ? 'Прошлая неделя' : '';
-    $('#this-week').innerHTML = `<b>${label || 'Неделя'}</b><small>${monday.getDate()} ${MONTHS[monday.getMonth()]} — ${sunday.getDate()} ${MONTHS[sunday.getMonth()]}</small>`;
+    const label = { 0: 'Эта неделя', 1: 'Следующая неделя', '-1': 'Прошлая неделя' }[state.weekOffset] || 'Неделя';
+    $('#this-week').innerHTML = `<b>${label}</b><small>${monday.getDate()} ${MONTHS[monday.getMonth()]} — ${sunday.getDate()} ${MONTHS[sunday.getMonth()]}</small>`;
 
     const today = todayYmd();
-    const now = new Date();
-    const nowHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const hm = nowHM();
     let html = '';
     let any = false;
     for (let i = 0; i < 7; i++) {
@@ -256,9 +268,9 @@
         const hw = hwFor(l);
         const open = hw.filter((h) => !h.done).length;
         const doneAll = hw.length > 0 && open === 0;
-        const isNow = date === today && l.start <= nowHM && nowHM < l.end;
-        const past = date < today || (date === today && l.end <= nowHM);
-        html += `<button class="lesson type-${esc(typeClass(l.typeShort))} ${isNow ? 'now' : ''} ${past ? 'past' : ''} ${l.cancelled ? 'cancelled' : ''}" data-uid="${esc(l.uid)}">
+        const isNow = date === today && l.start <= hm && hm < l.end;
+        const past = date < today || (date === today && l.end <= hm);
+        html += `<button class="lesson type-${typeClass(l.typeShort)} ${isNow ? 'now' : ''} ${past ? 'past' : ''} ${l.cancelled ? 'cancelled' : ''}" data-uid="${esc(l.uid)}">
           <div class="time"><b>${esc(l.start)}</b><span>${esc(l.end)}</span></div>
           <div class="body">
             <div class="subj">${esc(l.subject)}</div>
@@ -269,9 +281,15 @@
       }
       html += '</div>';
     }
+
     const tomorrow = ymd(addDays(new Date(), 1));
-    const dueTomorrow = state.homework.filter((h) => !h.done && h.due === tomorrow).length;
-    const dueToday = state.homework.filter((h) => !h.done && h.due === today).length;
+    let dueToday = 0, dueTomorrow = 0;
+    for (const h of state.homework) {
+      if (h.done) continue;
+      const d = dueLesson(h);
+      if (d && d.date === today) dueToday++;
+      if (d && d.date === tomorrow) dueTomorrow++;
+    }
     if (dueToday || dueTomorrow) {
       const parts = [];
       if (dueToday) parts.push(`сегодня — ${dueToday}`);
@@ -280,7 +298,7 @@
     }
     if (!any) {
       html = `<div class="placeholder">${state.lessons.length
-        ? 'На эту неделю расписания пока нет.<br>Сайт публикует расписание примерно на 2 недели вперёд.'
+        ? 'На эту неделю расписания пока нет.<br>Сайт публикует расписание на эту и следующую неделю.'
         : 'Расписание ещё не загружено.'}</div>` + html;
     }
     if (state.lastUpdate) {
@@ -290,27 +308,28 @@
     $('#view-schedule').innerHTML = html;
   }
 
-  function typeClass(t) {
-    return { 'лек.': 'lec', 'пр.з.': 'prac', 'лаб.': 'lab' }[t] || 'other';
-  }
-
   function renderHomework() {
     const today = todayYmd();
-    const pending = state.homework.filter((h) => !h.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+    const pending = state.homework.filter((h) => !h.done).map((h) => ({ h, l: dueLesson(h) }));
+    pending.sort((a, b) => (a.l ? lkey(a.l) : '9999').localeCompare(b.l ? lkey(b.l) : '9999'));
     const done = state.homework.filter((h) => h.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
+
     let html = '';
     if (!pending.length) {
-      html += '<div class="placeholder">🎉 Всё сделано!<br><small>Чтобы добавить задание, нажмите на пару в расписании.</small></div>';
+      html += '<div class="placeholder">🎉 Всё сделано!<br><small>Чтобы записать ДЗ, нажмите «＋» или на пару в расписании.</small></div>';
     } else {
       const groups = new Map();
-      for (const h of pending) {
-        if (!groups.has(h.due)) groups.set(h.due, []);
-        groups.get(h.due).push(h);
+      for (const it of pending) {
+        const k = it.l ? it.l.date : '';
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(it);
       }
-      for (const [due, items] of groups) {
-        const overdue = due && due < today;
-        html += `<h2 class="due-head ${overdue ? 'overdue' : ''}">${due ? (overdue ? 'Просрочено · ' : 'Сдать: ') + esc(relDate(due)) : 'Без срока'}</h2>
-          <ul class="hw-list">${items.map((h) => hwItem(h, true)).join('')}</ul>`;
+      for (const [date, items] of groups) {
+        const overdue = date && date < today;
+        const head = !date ? '⏳ Следующей пары ещё нет в расписании'
+          : (overdue ? 'Просрочено · ' : 'Сдать: ') + relDate(date);
+        html += `<h2 class="due-head ${overdue ? 'overdue' : ''}">${esc(head)}</h2>
+          <ul class="hw-list">${items.map((it) => hwItem(it.h, true)).join('')}</ul>`;
       }
     }
     if (done.length) {
@@ -322,14 +341,23 @@
   }
 
   function hwItem(h, showSubject) {
+    const l = dueLesson(h);
+    let meta = '';
+    if (!h.done) {
+      meta = l ? `📅 к паре ${esc(prettyDate(l.date).toLowerCase())}, ${esc(l.start)}` : '⏳ ждёт следующую пару в расписании';
+      if (h.remind) {
+        const at = remindAtFor(l);
+        meta += at ? ` · 🔔 ${esc(remindLabel(at))}` : ' · 🔔 вкл.';
+      }
+    }
     return `<li class="hw ${h.done ? 'done' : ''}" data-id="${esc(h.id)}">
       <button class="check" data-act="toggle" aria-label="${h.done ? 'Отметить невыполненным' : 'Отметить выполненным'}">${h.done ? '✓' : ''}</button>
       <div class="hw-body">
         ${showSubject ? `<div class="hw-subj">${esc(h.subject)}</div>` : ''}
         <div class="hw-text">${esc(h.text)}</div>
-        ${!h.done && h.remind && h.due ? `<div class="hw-remind">🔔 ${esc(remindLabel(remindAt(h)))}</div>` : ''}
+        ${meta ? `<div class="hw-remind">${meta}</div>` : ''}
       </div>
-      ${!h.done && h.due ? `<button class="bell ${h.remind ? 'on' : ''}" data-act="bell" aria-label="${h.remind ? 'Выключить напоминание' : 'Включить напоминание'}" title="${h.remind ? 'Выключить напоминание' : 'Включить напоминание'}">${h.remind ? '🔔' : '🔕'}</button>` : ''}
+      ${!h.done ? `<button class="bell ${h.remind ? 'on' : ''}" data-act="bell" aria-label="${h.remind ? 'Выключить напоминание' : 'Включить напоминание'}">${h.remind ? '🔔' : '🔕'}</button>` : ''}
       <button class="del" data-act="delete" aria-label="Удалить">✕</button>
     </li>`;
   }
@@ -345,36 +373,24 @@
       <p>${esc(prettyDate(l.date))}, ${esc(l.start)}–${esc(l.end)}</p>
       <p>${l.room ? 'Аудитория ' + esc(l.room) : ''}${l.teacher ? ' · ' + esc(l.teacher) : ''}</p>`;
     renderLessonHw();
-
-    const next = nextLessonsOf(l);
-    const opts = next.map((n) => `<option value="${esc(n.uid)}">${esc(prettyDate(n.date))}, ${esc(n.start)} · ${esc(n.type)}</option>`);
-    opts.push(`<option value="this">К этой паре (${esc(prettyDate(l.date))})</option>`);
-    if (!next.length) {
-      const week = ymd(addDays(fromYmd(l.date), 7));
-      opts.unshift(`<option value="date:${week}">Через неделю (${esc(prettyDate(week))})</option>`);
-    }
-    $('#hw-due').innerHTML = opts.join(''); // default: the next lesson of this subject
     $('#hw-text').value = '';
     $('#hw-remind').checked = state.settings.remindDefault !== false;
-    updateRemindPreview();
+    updateDuePreview();
+    if ($('#dlg-pick').open) $('#dlg-pick').close();
     $('#dlg-lesson').showModal();
   }
 
-  // Due date chosen in the lesson dialog (without saving anything).
-  function selectedDue() {
+  function updateDuePreview() {
     const l = state.openLesson;
-    const sel = $('#hw-due').value;
-    if (sel === 'this') return { due: l.date, lessonUid: l.uid };
-    if (sel.startsWith('date:')) return { due: sel.slice(5), lessonUid: null };
-    const target = state.lessons.find((x) => x.uid === sel);
-    return target ? { due: target.date, lessonUid: target.uid } : { due: l.date, lessonUid: null };
-  }
-
-  function updateRemindPreview() {
-    if (!state.openLesson) return;
-    const at = remindAt({ due: selectedDue().due });
+    if (!l) return;
+    const next = dueLesson({ subject: l.subject, fromDate: l.date, fromStart: l.start });
+    $('#due-preview').innerHTML = next
+      ? `📅 Сдать к следующей паре: <b>${esc(prettyDate(next.date).toLowerCase())}, ${esc(next.start)}</b> · ${esc(next.type)}`
+      : '⏳ Следующей пары по этому предмету пока нет в расписании. Как только она появится на сайте, ДЗ привяжется к ней автоматически.';
+    const at = remindAtFor(next);
     const el = $('#remind-preview');
     if (!$('#hw-remind').checked) el.textContent = 'выключено';
+    else if (!next) el.textContent = 'накануне следующей пары, когда она появится';
     else if (at <= Date.now()) el.textContent = 'время уже прошло — напоминания не будет';
     else el.textContent = remindLabel(at);
   }
@@ -382,10 +398,10 @@
   function renderLessonHw() {
     const l = state.openLesson;
     const due = hwFor(l);
-    const given = state.homework.filter((h) => h.fromUid === l.uid && !due.includes(h));
+    const given = hwGivenAt(l).filter((h) => !due.includes(h));
     let html = '';
-    if (due.length) html += `<li class="sub">Нужно сделать к этой паре</li>` + due.map((h) => hwItem(h, false)).join('');
-    if (given.length) html += `<li class="sub">Задано на этой паре</li>` + given.map((h) => hwItem(h, false)).join('');
+    if (due.length) html += '<li class="sub">Нужно сделать к этой паре</li>' + due.map((h) => hwItem(h, false)).join('');
+    if (given.length) html += '<li class="sub">Задано на этой паре</li>' + given.map((h) => hwItem(h, false)).join('');
     if (!html) html = '<li class="empty">Заданий пока нет</li>';
     $('#lesson-hw').innerHTML = html;
   }
@@ -394,29 +410,32 @@
     const l = state.openLesson;
     const text = $('#hw-text').value.trim();
     if (!l || !text) return false;
-    const { due, lessonUid } = selectedDue();
     const remind = $('#hw-remind').checked;
-    state.homework.push({ id: uid(), subject: l.subject, text, due, lessonUid, fromUid: l.uid, done: false, remind, createdAt: new Date().toISOString() });
-    if (remind) ensureNotifyPermission();
+    state.homework.push({
+      id: uid(), subject: l.subject, text,
+      fromUid: l.uid, fromDate: l.date, fromStart: l.start,
+      remind, done: false, createdAt: new Date().toISOString(),
+    });
     save();
+    if (remind) ensureNotifyPermission();
     return true;
   }
 
   function hwAction(id, act) {
     const i = state.homework.findIndex((h) => h.id === id);
     if (i < 0) return;
+    const h = state.homework[i];
     if (act === 'toggle') {
-      const h = state.homework[i];
       h.done = !h.done;
       h.doneAt = h.done ? new Date().toISOString() : null;
     } else if (act === 'bell') {
-      const h = state.homework[i];
       h.remind = !h.remind;
       if (h.remind) {
         h.remindFrom = new Date().toISOString();
         ensureNotifyPermission();
-        const at = remindAt(h);
-        toast(at > Date.now() ? 'Напомню ' + remindLabel(at) : 'Время напоминания уже прошло');
+        const at = remindAtFor(dueLesson(h));
+        toast(!at ? 'Напомню накануне, когда пара появится в расписании'
+          : at > Date.now() ? 'Напомню ' + remindLabel(at) : 'Время напоминания уже прошло');
       } else {
         toast('Напоминание выключено');
       }
@@ -426,7 +445,27 @@
     }
     save();
     render();
-    if (state.openLesson && $('#dlg-lesson').open) renderLessonHw();
+    if (state.openLesson && $('#dlg-lesson').open) { renderLessonHw(); updateDuePreview(); }
+  }
+
+  // ---------- "+" : pick one of today's lessons ----------
+  function openPicker() {
+    const today = todayYmd();
+    let day = today;
+    let lessons = state.lessons.filter((l) => l.date === today);
+    if (!lessons.length) {
+      // No lessons today — offer the most recent day with lessons.
+      const past = state.lessons.filter((l) => l.date < today);
+      if (past.length) { day = past[past.length - 1].date; lessons = state.lessons.filter((l) => l.date === day); }
+    }
+    $('#pick-title').textContent = day === today ? 'Какая пара была сегодня?' : `Сегодня пар нет. ${prettyDate(day)}:`;
+    $('#pick-list').innerHTML = lessons.length
+      ? lessons.map((l) => `<button class="lesson type-${typeClass(l.typeShort)}" data-uid="${esc(l.uid)}">
+          <div class="time"><b>${esc(l.start)}</b><span>${esc(l.end)}</span></div>
+          <div class="body"><div class="subj">${esc(l.subject)}</div><div class="meta"><span class="kind">${esc(l.type)}</span></div></div>
+        </button>`).join('')
+      : '<p class="empty">В расписании нет пар.</p>';
+    $('#dlg-pick').showModal();
   }
 
   // ---------- events ----------
@@ -441,11 +480,9 @@
     }
     const tab = e.target.closest('.tab, [data-goto]');
     if (tab) { state.tab = tab.dataset.tab || tab.dataset.goto; render(); window.scrollTo(0, 0); return; }
-    if (e.target.id === 'btn-clear-done') {
-      if (confirm('Удалить все выполненные задания?')) {
-        state.homework = state.homework.filter((h) => !h.done);
-        save(); render();
-      }
+    if (e.target.id === 'btn-clear-done' && confirm('Удалить все выполненные задания?')) {
+      state.homework = state.homework.filter((h) => !h.done);
+      save(); render();
     }
   });
 
@@ -453,6 +490,7 @@
   $('#next-week').onclick = () => { state.weekOffset++; render(); };
   $('#this-week').onclick = () => { state.weekOffset = 0; render(); scrollToToday(); };
   $('#btn-refresh').onclick = () => refresh(true);
+  $('#fab-add').onclick = openPicker;
 
   $('#btn-add-hw').onclick = (e) => {
     e.preventDefault();
@@ -466,9 +504,8 @@
     }
   };
   $('#dlg-lesson').addEventListener('close', () => { state.openLesson = null; });
-  $('#hw-due').onchange = updateRemindPreview;
   $('#hw-remind').onchange = () => {
-    updateRemindPreview();
+    updateDuePreview();
     if ($('#hw-remind').checked) ensureNotifyPermission();
   };
 
@@ -483,16 +520,14 @@
     state.settings.remindTime = $('#set-remind-time').value || '18:00';
     state.settings.remindDefault = $('#set-remind-default').checked;
     save();
-    refresh(true);
+    render();
   };
   $('#btn-test-notify').onclick = async () => {
     if (!(await ensureNotifyPermission())) return;
     const reg = await navigator.serviceWorker.ready;
     reg.showNotification('📝 Проверка напоминаний', {
       body: 'Уведомления работают! Так будет выглядеть напоминание о ДЗ.',
-      icon: 'icons/icon-192.png',
-      badge: 'icons/icon-192.png',
-      data: { url: './#homework' },
+      icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: './#homework' },
     });
   };
   $('#set-file').onchange = async (e) => {
@@ -524,7 +559,7 @@
       const ids = new Set(state.homework.map((h) => h.id));
       const added = data.homework.filter((h) => h && h.id && !ids.has(h.id));
       state.homework = state.homework.concat(added);
-      save(); render();
+      migrate(); save(); render();
       $('#dlg-settings').close();
       toast(`Восстановлено заданий: ${added.length}`);
     } catch (err) { alert('Не удалось восстановить: ' + err.message); }
@@ -549,13 +584,11 @@
     if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 
-  // Refresh when the app comes back to the foreground (at most every 30 minutes).
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     render();
     fireDueReminders();
-    const last = state.lastUpdate ? Date.parse(state.lastUpdate.at) : 0;
-    if (Date.now() - last > 30 * 60 * 1000) refresh(false);
+    refreshIfNewDay();
   });
 
   if ('serviceWorker' in navigator) {
@@ -567,12 +600,11 @@
   }
   if (location.hash === '#homework') state.tab = 'homework';
 
-  // While the app is open (or in the background), check reminders every minute.
+  migrate();
   syncReminders();
-  setTimeout(fireDueReminders, 1500);
-  setInterval(fireDueReminders, 60 * 1000);
-
   render();
   setTimeout(scrollToToday, 50);
-  refresh(false);
+  if (!state.lessons.length) refresh(false); else refreshIfNewDay();
+  setTimeout(fireDueReminders, 1500);
+  setInterval(() => { fireDueReminders(); refreshIfNewDay(); }, 60 * 1000);
 })();

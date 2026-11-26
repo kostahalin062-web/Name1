@@ -30,6 +30,8 @@
     <section id="view-homework" hidden></section>
   </main>
 
+  <button id="fab-add" class="fab" aria-label="Записать ДЗ за сегодня">＋</button>
+
   <nav class="tabs">
     <button data-tab="schedule" class="tab active"><span>📅</span>Расписание</button>
     <button data-tab="homework" class="tab"><span>📝</span>ДЗ <b id="hw-badge" hidden></b></button>
@@ -45,10 +47,7 @@
         <span>Новое задание</span>
         <textarea id="hw-text" rows="3" placeholder="Например: решить задачи 1–5, стр. 42"></textarea>
       </label>
-      <label class="field">
-        <span>Сдать к</span>
-        <select id="hw-due"></select>
-      </label>
+      <p id="due-preview" class="due-preview"></p>
       <label class="switch-row">
         <span>🔔 Напомнить накануне<small id="remind-preview"></small></span>
         <input type="checkbox" id="hw-remind" checked>
@@ -61,6 +60,15 @@
     </form>
   </dialog>
 
+  <!-- Pick today's lesson for "+" -->
+  <dialog id="dlg-pick" class="sheet">
+    <form method="dialog">
+      <h3 id="pick-title">Какая пара была сегодня?</h3>
+      <div id="pick-list"></div>
+      <div class="actions"><button value="cancel" class="btn ghost">Закрыть</button></div>
+    </form>
+  </dialog>
+
   <!-- Settings -->
   <dialog id="dlg-settings" class="sheet">
     <form method="dialog">
@@ -69,7 +77,7 @@
         <span>Ссылка на экспорт расписания (.ics)</span>
         <input id="set-url" type="url" inputmode="url">
       </label>
-      <p class="hint">Приложение пробует скачать расписание по этой ссылке, а если сайт не пускает — берёт копию, которую GitHub обновляет каждые несколько часов.</p>
+      <p class="hint">Приложение пробует скачать расписание по этой ссылке, а если сайт не пускает — берёт копию, которую GitHub обновляет каждый день.</p>
       <label class="field">
         <span>Во сколько напоминать накануне пары</span>
         <input id="set-remind-time" type="time" value="18:00">

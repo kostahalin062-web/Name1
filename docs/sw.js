@@ -1,7 +1,7 @@
 // Offline support + reminders.
 importScripts('reminders-db.js');
 
-const CACHE = 'dz-v2';
+const CACHE = 'dz-v3';
 const SHELL = ['./', 'index.html', 'style.css', 'ics.js', 'reminders-db.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
