@@ -21,7 +21,6 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
-import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
@@ -170,10 +169,16 @@ public class AlarmOnDeviceTest {
         assertTrue("main screen opened", device.wait(Until.hasObject(By.text("⏰ Будильник на пары")), 15000));
         screenshot("3-main");
 
-        UiObject2 scroll = device.findObject(By.scrollable(true));
-        assertNotNull("screen scrolls", scroll);
-        UiObject2 set = scroll.scrollUntil(Direction.DOWN, Until.findObject(By.text("Поставить будильники")));
-        assertNotNull("button \"Поставить будильники\" found after scrolling", set);
+        UiObject2 set = null;
+        for (int i = 0; i < 12 && set == null; i++) {
+            set = device.findObject(By.text("Поставить будильники"));
+            if (set == null) {
+                device.swipe(device.getDisplayWidth() / 2, device.getDisplayHeight() * 3 / 4,
+                        device.getDisplayWidth() / 2, device.getDisplayHeight() / 4, 20);
+                device.waitForIdle(1000);
+            }
+        }
+        assertNotNull("button \"Поставить будильники\" not found; on screen: " + visibleTexts(), set);
         set.click();
         assertTrue("series saved", waitFor(() -> store.series().size() == 1, 5000));
         Store.Series s = store.series().get(0);
@@ -195,6 +200,16 @@ public class AlarmOnDeviceTest {
         s.interval = intervalMin;
         s.label = "Тест";
         return s;
+    }
+
+    private String visibleTexts() {
+        StringBuilder b = new StringBuilder();
+        for (UiObject2 o : device.findObjects(By.pkg(PKG))) {
+            String t = o.getText();
+            if (t != null && !t.isEmpty()) b.append('[').append(t.replace('\n', ' ')).append("] ");
+        }
+        b.append(" | top package: ").append(device.getCurrentPackageName());
+        return b.toString();
     }
 
     private long nextSystemAlarm() {
