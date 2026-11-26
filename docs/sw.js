@@ -1,7 +1,8 @@
-// Offline support: app files are cached; the schedule is always fetched from the
-// network first and falls back to the cached copy when offline.
-const CACHE = 'dz-v1';
-const SHELL = ['./', 'index.html', 'style.css', 'ics.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+// Offline support + reminders.
+importScripts('reminders-db.js');
+
+const CACHE = 'dz-v2';
+const SHELL = ['./', 'index.html', 'style.css', 'ics.js', 'reminders-db.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -18,8 +19,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-
-  // Network first for everything, so updates arrive right away; cache as fallback.
+  // Network first, so updates arrive right away; cache as offline fallback.
   e.respondWith(
     fetch(e.request)
       .then((res) => {
@@ -31,4 +31,25 @@ self.addEventListener('fetch', (e) => {
       })
       .catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
+});
+
+// Chrome on Android wakes the installed app in the background from time to time.
+self.addEventListener('periodicsync', (e) => {
+  if (e.tag === 'dz-reminders') e.waitUntil(self.ReminderDB.fireDue(self.registration));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const target = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url.startsWith(self.registration.scope)) {
+        await c.focus();
+        c.postMessage({ type: 'open-homework' });
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
 });

@@ -22,7 +22,7 @@
   const state = {
     lessons: store.get('lessons', []),
     homework: store.get('homework', []),
-    settings: Object.assign({ url: DEFAULT_URL }, store.get('settings', {})),
+    settings: Object.assign({ url: DEFAULT_URL, remindTime: '18:00', remindDefault: true }, store.get('settings', {})),
     lastUpdate: store.get('lastUpdate', null),
     calName: store.get('calName', ''),
     weekOffset: 0,
@@ -64,6 +64,7 @@
     store.set('settings', state.settings);
     store.set('lastUpdate', state.lastUpdate);
     store.set('calName', state.calName);
+    syncReminders();
   }
 
   // ---------- schedule loading ----------
@@ -141,6 +142,75 @@
   }
   function pendingCount() { return state.homework.filter((h) => !h.done).length; }
 
+  // ---------- reminders ----------
+  // A reminder fires the day before the lesson the homework is due for, at settings.remindTime.
+  function remindAt(h) {
+    if (!h.due) return null;
+    const [hh, mm] = (state.settings.remindTime || '18:00').split(':').map(Number);
+    const d = addDays(fromYmd(h.due), -1);
+    d.setHours(hh || 0, mm || 0, 0, 0);
+    return d.getTime();
+  }
+  function remindLabel(at) {
+    const d = new Date(at);
+    return `${relDate(ymd(d))} в ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function syncReminders() {
+    if (!window.ReminderDB) return;
+    const list = [];
+    for (const h of state.homework) {
+      if (!h.remind || h.done) continue;
+      const at = remindAt(h);
+      if (at == null) continue;
+      const lesson = h.lessonUid && state.lessons.find((l) => l.uid === h.lessonUid);
+      const when = lesson ? `${prettyDate(lesson.date)}, ${lesson.start}` : prettyDate(h.due);
+      list.push({
+        id: h.id,
+        key: h.id + '@' + at,
+        at,
+        from: Date.parse(h.remindFrom || h.createdAt) || 0,
+        title: `📝 Завтра: ${h.subject}`,
+        body: `${h.text}\nПара: ${when}${lesson && lesson.room ? ', ауд. ' + lesson.room : ''}`,
+      });
+    }
+    window.ReminderDB.set('reminders', list).catch(() => {});
+  }
+
+  async function fireDueReminders() {
+    if (!window.ReminderDB || !('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await window.ReminderDB.fireDue(reg);
+    } catch { /* ignore */ }
+  }
+
+  // Returns true when notifications are allowed (asks the first time).
+  async function ensureNotifyPermission() {
+    if (typeof Notification === 'undefined') {
+      toast('Этот браузер не поддерживает уведомления');
+      return false;
+    }
+    if (Notification.permission === 'default') {
+      try { await Notification.requestPermission(); } catch { /* ignore */ }
+      if (Notification.permission === 'granted') setupBackgroundSync();
+    }
+    if (Notification.permission !== 'granted') {
+      toast('Уведомления запрещены — разрешите их в настройках Chrome');
+      return false;
+    }
+    return true;
+  }
+
+  async function setupBackgroundSync() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (!('periodicSync' in reg)) return;
+      const st = await navigator.permissions.query({ name: 'periodic-background-sync' });
+      if (st.state === 'granted') await reg.periodicSync.register('dz-reminders', { minInterval: 60 * 60 * 1000 });
+    } catch { /* not supported */ }
+  }
+
   // Upcoming lessons of the same subject after the given lesson (for "сдать к").
   function nextLessonsOf(lesson, limit = 8) {
     const key = lesson.date + lesson.start;
@@ -199,6 +269,15 @@
       }
       html += '</div>';
     }
+    const tomorrow = ymd(addDays(new Date(), 1));
+    const dueTomorrow = state.homework.filter((h) => !h.done && h.due === tomorrow).length;
+    const dueToday = state.homework.filter((h) => !h.done && h.due === today).length;
+    if (dueToday || dueTomorrow) {
+      const parts = [];
+      if (dueToday) parts.push(`сегодня — ${dueToday}`);
+      if (dueTomorrow) parts.push(`завтра — ${dueTomorrow}`);
+      html = `<button class="banner" data-goto="homework">📝 Сдать ДЗ: ${parts.join(', ')} →</button>` + html;
+    }
     if (!any) {
       html = `<div class="placeholder">${state.lessons.length
         ? 'На эту неделю расписания пока нет.<br>Сайт публикует расписание примерно на 2 недели вперёд.'
@@ -248,7 +327,9 @@
       <div class="hw-body">
         ${showSubject ? `<div class="hw-subj">${esc(h.subject)}</div>` : ''}
         <div class="hw-text">${esc(h.text)}</div>
+        ${!h.done && h.remind && h.due ? `<div class="hw-remind">🔔 ${esc(remindLabel(remindAt(h)))}</div>` : ''}
       </div>
+      ${!h.done && h.due ? `<button class="bell ${h.remind ? 'on' : ''}" data-act="bell" aria-label="${h.remind ? 'Выключить напоминание' : 'Включить напоминание'}" title="${h.remind ? 'Выключить напоминание' : 'Включить напоминание'}">${h.remind ? '🔔' : '🔕'}</button>` : ''}
       <button class="del" data-act="delete" aria-label="Удалить">✕</button>
     </li>`;
   }
@@ -274,7 +355,28 @@
     }
     $('#hw-due').innerHTML = opts.join(''); // default: the next lesson of this subject
     $('#hw-text').value = '';
+    $('#hw-remind').checked = state.settings.remindDefault !== false;
+    updateRemindPreview();
     $('#dlg-lesson').showModal();
+  }
+
+  // Due date chosen in the lesson dialog (without saving anything).
+  function selectedDue() {
+    const l = state.openLesson;
+    const sel = $('#hw-due').value;
+    if (sel === 'this') return { due: l.date, lessonUid: l.uid };
+    if (sel.startsWith('date:')) return { due: sel.slice(5), lessonUid: null };
+    const target = state.lessons.find((x) => x.uid === sel);
+    return target ? { due: target.date, lessonUid: target.uid } : { due: l.date, lessonUid: null };
+  }
+
+  function updateRemindPreview() {
+    if (!state.openLesson) return;
+    const at = remindAt({ due: selectedDue().due });
+    const el = $('#remind-preview');
+    if (!$('#hw-remind').checked) el.textContent = 'выключено';
+    else if (at <= Date.now()) el.textContent = 'время уже прошло — напоминания не будет';
+    else el.textContent = remindLabel(at);
   }
 
   function renderLessonHw() {
@@ -292,16 +394,10 @@
     const l = state.openLesson;
     const text = $('#hw-text').value.trim();
     if (!l || !text) return false;
-    const sel = $('#hw-due').value;
-    let due, lessonUid = null;
-    if (sel === 'this') { due = l.date; lessonUid = l.uid; }
-    else if (sel.startsWith('date:')) { due = sel.slice(5); }
-    else {
-      const target = state.lessons.find((x) => x.uid === sel);
-      due = target ? target.date : l.date;
-      lessonUid = target ? target.uid : null;
-    }
-    state.homework.push({ id: uid(), subject: l.subject, text, due, lessonUid, fromUid: l.uid, done: false, createdAt: new Date().toISOString() });
+    const { due, lessonUid } = selectedDue();
+    const remind = $('#hw-remind').checked;
+    state.homework.push({ id: uid(), subject: l.subject, text, due, lessonUid, fromUid: l.uid, done: false, remind, createdAt: new Date().toISOString() });
+    if (remind) ensureNotifyPermission();
     save();
     return true;
   }
@@ -313,6 +409,17 @@
       const h = state.homework[i];
       h.done = !h.done;
       h.doneAt = h.done ? new Date().toISOString() : null;
+    } else if (act === 'bell') {
+      const h = state.homework[i];
+      h.remind = !h.remind;
+      if (h.remind) {
+        h.remindFrom = new Date().toISOString();
+        ensureNotifyPermission();
+        const at = remindAt(h);
+        toast(at > Date.now() ? 'Напомню ' + remindLabel(at) : 'Время напоминания уже прошло');
+      } else {
+        toast('Напоминание выключено');
+      }
     } else if (act === 'delete') {
       if (!confirm('Удалить задание?')) return;
       state.homework.splice(i, 1);
@@ -332,8 +439,8 @@
       hwAction(actBtn.closest('[data-id]').dataset.id, actBtn.dataset.act);
       return;
     }
-    const tab = e.target.closest('.tab');
-    if (tab) { state.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); return; }
+    const tab = e.target.closest('.tab, [data-goto]');
+    if (tab) { state.tab = tab.dataset.tab || tab.dataset.goto; render(); window.scrollTo(0, 0); return; }
     if (e.target.id === 'btn-clear-done') {
       if (confirm('Удалить все выполненные задания?')) {
         state.homework = state.homework.filter((h) => !h.done);
@@ -359,15 +466,34 @@
     }
   };
   $('#dlg-lesson').addEventListener('close', () => { state.openLesson = null; });
+  $('#hw-due').onchange = updateRemindPreview;
+  $('#hw-remind').onchange = () => {
+    updateRemindPreview();
+    if ($('#hw-remind').checked) ensureNotifyPermission();
+  };
 
   $('#btn-menu').onclick = () => {
     $('#set-url').value = state.settings.url || '';
+    $('#set-remind-time').value = state.settings.remindTime || '18:00';
+    $('#set-remind-default').checked = state.settings.remindDefault !== false;
     $('#dlg-settings').showModal();
   };
   $('#btn-save-settings').onclick = () => {
     state.settings.url = $('#set-url').value.trim();
+    state.settings.remindTime = $('#set-remind-time').value || '18:00';
+    state.settings.remindDefault = $('#set-remind-default').checked;
     save();
     refresh(true);
+  };
+  $('#btn-test-notify').onclick = async () => {
+    if (!(await ensureNotifyPermission())) return;
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification('📝 Проверка напоминаний', {
+      body: 'Уведомления работают! Так будет выглядеть напоминание о ДЗ.',
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      data: { url: './#homework' },
+    });
   };
   $('#set-file').onchange = async (e) => {
     const f = e.target.files[0];
@@ -427,13 +553,24 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     render();
+    fireDueReminders();
     const last = state.lastUpdate ? Date.parse(state.lastUpdate.at) : 0;
     if (Date.now() - last > 30 * 60 * 1000) refresh(false);
   });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'open-homework') { state.tab = 'homework'; render(); }
+    });
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') setupBackgroundSync();
   }
+  if (location.hash === '#homework') state.tab = 'homework';
+
+  // While the app is open (or in the background), check reminders every minute.
+  syncReminders();
+  setTimeout(fireDueReminders, 1500);
+  setInterval(fireDueReminders, 60 * 1000);
 
   render();
   setTimeout(scrollToToday, 50);
