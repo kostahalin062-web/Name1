@@ -170,7 +170,7 @@ public class AlarmOnDeviceTest {
         screenshot("3-main");
 
         UiObject2 set = null;
-        for (int i = 0; i < 12 && set == null; i++) {
+        for (int k = 0; k < 12 && set == null; k++) {
             set = device.findObject(By.text("Поставить будильники"));
             if (set == null) {
                 device.swipe(device.getDisplayWidth() / 2, device.getDisplayHeight() * 3 / 4,
