@@ -103,8 +103,7 @@ public class AlarmOnDeviceTest {
         assertEquals("next alarm of the series is already scheduled", s.start + 60000, nextSystemAlarm());
 
         tap("Я встал — убрать остальные");
-        assertTrue("sound stops; on screen: " + visibleTexts(),
-                waitFor(() -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000));
+        assertEventually("sound stops", () -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000);
         assertTrue("remaining alarms of the series removed", store.series().isEmpty());
         assertEquals("no system alarm left", -1, nextSystemAlarm());
     }
@@ -117,8 +116,7 @@ public class AlarmOnDeviceTest {
         assertTrue("rings", waitFor(() -> s.id.equals(AlarmService.ringingSeries), 25000));
 
         tap("Выключить");
-        assertTrue("sound stops; on screen: " + visibleTexts(),
-                waitFor(() -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000));
+        assertEventually("sound stops", () -> !AlarmService.sounding && AlarmService.ringingSeries == null, 10000);
         assertEquals("series stays", 1, store.series().size());
         assertEquals("next alarm in 2 minutes", s.start + 120000, nextSystemAlarm());
     }
@@ -140,7 +138,7 @@ public class AlarmOnDeviceTest {
         screenshot("2-alarm-locked");
 
         tap("Выключить");
-        assertTrue("sound stops; on screen: " + visibleTexts(), waitFor(() -> !AlarmService.sounding, 10000));
+        assertEventually("sound stops", () -> !AlarmService.sounding, 10000);
     }
 
     @Test
@@ -172,7 +170,7 @@ public class AlarmOnDeviceTest {
                 device.waitForIdle(1000);
             }
         }
-        assertNotNull("button \"Поставить будильники\" not found; on screen: " + visibleTexts(), set);
+        if (set == null) throw new AssertionError("button \"Поставить будильники\" not found; on screen: " + visibleTexts());
         set.click();
         assertTrue("series saved", waitFor(() -> store.series().size() == 1, 5000));
         Store.Series s = store.series().get(0);
@@ -207,7 +205,7 @@ public class AlarmOnDeviceTest {
             b = device.findObject(By.text(text));
             where = "notification";
         }
-        assertNotNull("button \"" + text + "\" not found; on screen: " + visibleTexts(), b);
+        if (b == null) throw new AssertionError("button \"" + text + "\" not found; on screen: " + visibleTexts());
         Log.i(TAG, "tap \"" + text + "\" on " + where);
         b.click();
     }
@@ -215,7 +213,8 @@ public class AlarmOnDeviceTest {
     private String visibleTexts() {
         StringBuilder b = new StringBuilder();
         for (UiObject2 o : device.findObjects(By.textContains(""))) {
-            String t = o.getText();
+            String t;
+            try { t = o.getText(); } catch (RuntimeException stale) { continue; }
             if (t != null && !t.isEmpty()) b.append('[').append(t.replace('\n', ' ')).append("] ");
         }
         b.append(" | top package: ").append(device.getCurrentPackageName());
@@ -264,6 +263,10 @@ public class AlarmOnDeviceTest {
         } catch (IOException e) {
             return "";
         }
+    }
+
+    private void assertEventually(String what, BooleanSupplier cond, long ms) {
+        if (!waitFor(cond, ms)) throw new AssertionError(what + "; on screen: " + visibleTexts());
     }
 
     private static boolean waitFor(BooleanSupplier cond, long ms) {
