@@ -1,0 +1,66 @@
+name: Собрать «Будильник на пары» (APK)
+
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Ключ подписи из секрета (если задан)
+        env:
+          KEYSTORE_B64: ${{ secrets.BUDILNIK_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/budilnik.keystore"
+            echo "BUDILNIK_KEYSTORE_FILE=$RUNNER_TEMP/budilnik.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Секрет BUDILNIK_KEYSTORE не задан — APK подписан временным ключом, обновление может потребовать переустановки."
+          fi
+
+      - name: Собрать APK
+        env:
+          BUDILNIK_KEYSTORE_PASSWORD: ${{ secrets.BUDILNIK_KEYSTORE_PASSWORD }}
+        run: gradle -p android --no-daemon assembleRelease
+
+      - name: Подготовить файл
+        run: cp android/app/build/outputs/apk/release/app-release.apk budilnik.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: budilnik-apk
+          path: budilnik.apk
+
+      - name: Выложить в релиз «budilnik-latest»
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: budilnik-latest
+          name: Будильник на пары (последняя сборка)
+          body: |
+            Скачай `budilnik.apk` на телефон и установи (разреши установку из этого источника).
+            Новая сборка ставится поверх старой — будильники сохраняются.
+            Сборка из коммита ${{ github.sha }}.
+          files: budilnik.apk
+          make_latest: false

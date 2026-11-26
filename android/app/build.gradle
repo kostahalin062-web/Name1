@@ -1,0 +1,57 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Copy of the timetable from the "Моё ДЗ" app, bundled so the alarm app works
+// even before the first download succeeds.
+def bundledAssets = layout.buildDirectory.dir('generated/bundledSchedule').get().asFile
+tasks.register('copySchedule', Copy) {
+    from rootProject.file('../docs/schedule.ics')
+    into bundledAssets
+}
+preBuild.dependsOn 'copySchedule'
+
+def ks = System.getenv('BUDILNIK_KEYSTORE_FILE')
+def hasKey = ks != null && file(ks).exists()
+
+android {
+    namespace 'ru.para.budilnik'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'ru.para.budilnik'
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int)
+        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+    }
+
+    // A fixed key (from the BUDILNIK_KEYSTORE secret) lets every new APK install over
+    // the previous one. Without it the build is signed with the runner's debug key.
+    signingConfigs {
+        if (hasKey) {
+            shared {
+                storeFile file(ks)
+                storePassword System.getenv('BUDILNIK_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('BUDILNIK_KEY_ALIAS') ?: 'budilnik'
+                keyPassword System.getenv('BUDILNIK_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasKey ? signingConfigs.shared : signingConfigs.debug
+        }
+    }
+
+    sourceSets {
+        main.assets.srcDir bundledAssets
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
