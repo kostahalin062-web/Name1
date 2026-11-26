@@ -36,6 +36,15 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # кэш библиотек Gradle: меньше скачиваний с Maven при каждой сборке
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apk/package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       - name: Подготовить Android-проект
         run: |
           npm ci --no-audit --no-fund
@@ -57,7 +66,13 @@ jobs:
         working-directory: apk/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          # до 3 попыток: репозитории библиотек иногда временно отвечают «429 Too Many Requests»
+          for attempt in 1 2 3; do
+            if ./gradlew assembleDebug --no-daemon; then break; fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            echo "Сборка не удалась (попытка $attempt), повтор через 60 секунд…"
+            sleep 60
+          done
           cp app/build/outputs/apk/debug/app-debug.apk ../moe-dz.apk
 
       - uses: actions/upload-artifact@v4
